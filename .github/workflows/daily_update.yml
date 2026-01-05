@@ -1,0 +1,38 @@
+name: Daily Usage Update
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs at 00:00 UTC every day
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  update-usage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run update script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/update_usage.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/usage.json
+          git commit -m "Update usage data [skip ci]" || echo "No changes to commit"
+          git push
