@@ -1,15 +1,16 @@
 ﻿# Copilot Usage Tracker
 
+> **Note**: This project is a pure product of **vibe code**.
+
 This project tracks GitHub Copilot "Premium Request" usage and compares it against a planned linear growth target based on actual workdays. It is specifically designed for tracking newer Copilot tiers that use a monthly quota for advanced models.
 
 ## Features
 
 - **Daily Automation**: A GitHub Action runs daily to fetch your latest billing data.
-- **Dynamic Quota Detection**: Automatically detects your monthly usage limit (e.g., 300 or 1000 requests) directly from the GitHub API.
+- **Quota Management**: Currently uses a default monthly limit (e.g., 300) to calculate targets. *Note: Dynamic detection from API is a planned optimization.*
 - **Intelligent Visualization**:
   - **Stacked Bar Chart**: Visualizes usage breakdown for different models (Claude, Gemini, GPT).
   - **Efficiency Background**: A smart area background that highlights "Over" (Warm/Red) or "Under" (Cold/Blue) usage relative to the daily plan.
-  - **Historical Browsing**: Seamlessly switch between months and years.
 - **Smart Holiday Logic**: Automatically fetches official holiday data to calculate a realistic linear target (Planned vs. Actual).
 - **Modern Dashboard**: A minimalist dashboard built with Chart.js, featuring responsive design and browser-native localization.
 
@@ -24,8 +25,7 @@ This project tracks GitHub Copilot "Premium Request" usage and compares it again
 
 1. **Fork/Clone**: Set up this repository.
 2. **Configure Secrets**: 
-   - Create a GitHub Environment named `api`.
-   - Add two Secrets to that environment:
+   - Add two **Repository Secrets** to your GitHub repository:
      - `API_TOKEN`: A Personal Access Token (PAT) with `read:user` or `billing:read` scope.
      - `API_USER`: Your GitHub username.
 3. **Enable GitHub Pages**: Go to **Settings > Pages** and set the source to the `main` branch root.
