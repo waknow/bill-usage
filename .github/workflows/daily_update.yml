@@ -2,7 +2,7 @@ name: Daily Usage Update
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Runs at 00:00 UTC every day
+    - cron: '30 23 * * *'  # Runs at 23:30 UTC every day
   workflow_dispatch: # Allows manual trigger
 
 jobs:
@@ -26,13 +26,14 @@ jobs:
 
       - name: Run update script
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
+          GITHUB_USER : ${{ secrets.API_USER }}
         run: python scripts/update_usage.py
 
       - name: Commit and push changes
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/usage.json
-          git commit -m "Update usage data [skip ci]" || echo "No changes to commit"
+          git add data/*.json data/**/*.json
+          git commit -m "Update usage data $(date +'%Y-%m') [skip ci]" || echo "No changes to commit"
           git push
