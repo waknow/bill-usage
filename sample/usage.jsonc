@@ -1,0 +1,61 @@
+{
+  "timePeriod": {
+    "year": 2026,
+    "month": 1
+  },
+  "user": "waknow",
+  "usageItems": [
+    {
+      "product": "Copilot", 
+      "sku": "Copilot Premium Request",
+      "model": "Claude Sonnet 4.5", //Model
+      "unitType": "requests",
+      "pricePerUnit": 0.04,
+      "grossQuantity": 33.0, //Requests
+      "grossAmount": 1.32,
+      "discountQuantity": 33.0, //Included requests
+      "discountAmount": 1.32,
+      "netQuantity": 0.0,
+      "netAmount": 0.0
+    },
+    {
+      "product": "Copilot",
+      "sku": "Copilot Premium Request",
+      "model": "Gemini 3 Flash",
+      "unitType": "requests",
+      "pricePerUnit": 0.04,
+      "grossQuantity": 53.46,
+      "grossAmount": 2.1384,
+      "discountQuantity": 53.46,
+      "discountAmount": 2.1384,
+      "netQuantity": 0.0,
+      "netAmount": 0.0
+    },
+    {
+      "product": "Copilot",
+      "sku": "Copilot Premium Request",
+      "model": "Gemini 3 Pro",
+      "unitType": "requests",
+      "pricePerUnit": 0.04,
+      "grossQuantity": 19.0,
+      "grossAmount": 0.76,
+      "discountQuantity": 19.0,
+      "discountAmount": 0.76,
+      "netQuantity": 0.0,
+      "netAmount": 0.0
+    },
+    {
+      "product": "Copilot",
+      "sku": "Copilot Premium Request",
+      "model": "GPT-5.1-Codex-Mini",
+      "unitType": "requests",
+      "pricePerUnit": 0.04,
+      "grossQuantity": 0.66,
+      "grossAmount": 0.0264,
+      "discountQuantity": 0.66,
+      "discountAmount": 0.0264,
+      "netQuantity": 0.0,
+      "netAmount": 0.0
+    }
+  ]
+}
