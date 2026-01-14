@@ -57,24 +57,24 @@ def calculate_planned_usage(settings, holidays_config, start_date, end_date):
     return planned
 
 def fetch_actual_usage(settings):
-    # This is a placeholder for the GitHub API call.
-    # Note: The GITHUB_TOKEN needs 'read:org' or 'manage_billing:enterprise' permissions.
-    # For Copilot usage, see: https://docs.github.com/en/rest/copilot/copilot-usage
+    # Get user billing premium request usage report
+    # https://docs.github.com/en/rest/billing/usage?apiVersion=2022-11-28#get-billing-premium-request-usage-report-for-a-user
     
     token = os.getenv("GITHUB_TOKEN")
     if not token:
         print("GITHUB_TOKEN not found, skipping actual usage fetch.")
-        return {}
+        return {}, None
 
-    org = settings.get("github_org")
-    enterprise = settings.get("github_enterprise")
+    username = settings.get("github_user")
+    if not username or username == "YOUR_GITHUB_USERNAME":
+        print("github_user not set in settings.json.")
+        return {}, None
+
+    now = datetime.now()
+    year = now.year
+    month = now.month
     
-    # Example for Org-level Copilot usage
-    # If using Enterprise, the URL would be:
-    # f"https://api.github.com/enterprises/{enterprise}/copilot/usage"
-    url = f"https://api.github.com/orgs/{org}/copilot/usage"
-    if enterprise and enterprise != "YOUR_ENTERPRISE_SLUG":
-        url = f"https://api.github.com/enterprises/{enterprise}/copilot/usage"
+    url = f"https://api.github.com/users/{username}/settings/billing/premium_request/usage?year={year}&month={month}"
     
     headers = {
         "Authorization": f"Bearer {token}",
@@ -86,23 +86,25 @@ def fetch_actual_usage(settings):
         print(f"Fetching usage from {url}...")
         response = requests.get(url, headers=headers)
         if response.status_code == 404:
-            print("API returned 404. Check your ORG_NAME or ENTERPRISE_SLUG.")
-            return {}
+            print(f"API returned 404 for user {username}. Ensure the token has 'Plan' user permissions (read).")
+            return {}, None
         response.raise_for_status()
         data = response.json()
         
-        actual = {}
-        for day in data:
-            date_str = day["day"]
-            # GitHub returns daily stats. We might want cumulative or daily.
-            # The user asked for "comparison", usually cumulative is better for "planned vs actual".
-            # But the API returns daily. Let's store daily and we can sum in the UI or here.
-            # For now, let's store the 'total_suggestions_count' as a sample metric.
-            actual[date_str] = day.get("total_suggestions_count", 0) 
-        return actual
+        # Try to get the limit/quota from the response if available
+        fetched_limit = data.get("limit") or data.get("quota")
+        
+        total_month_usage = 0
+        if "usageItems" in data:
+            for item in data["usageItems"]:
+                total_month_usage += item.get("netQuantity", 0)
+        
+        # Return today's date with the current month-to-date total
+        today_str = now.strftime("%Y-%m-%d")
+        return {today_str: total_month_usage}, fetched_limit
     except Exception as e:
         print(f"Error fetching actual usage: {e}")
-        return {}
+        return {}, None
 
 def main():
     with open("config/settings.json", "r") as f:
@@ -122,8 +124,15 @@ def main():
     if config:
         holidays_config[str(today.year)] = config
         
+    actual, fetched_limit = fetch_actual_usage(settings)
+    
+    if fetched_limit:
+        print(f"Fetched limit from API: {fetched_limit}")
+        settings["total_target"] = fetched_limit
+    elif "total_target" not in settings:
+        settings["total_target"] = 1000 # Default if everything else fails
+        
     planned = calculate_planned_usage(settings, holidays_config, start_date, end_date)
-    actual = fetch_actual_usage(settings)
     
     # Data per month
     month_str = today.strftime("%Y-%m")

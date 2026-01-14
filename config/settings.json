@@ -1,5 +1,5 @@
 {
-  "total_target": 1000,
+  "github_user": "YOUR_GITHUB_USERNAME",
   "github_org": "YOUR_ORG_NAME",
   "github_enterprise": "YOUR_ENTERPRISE_SLUG"
 }
