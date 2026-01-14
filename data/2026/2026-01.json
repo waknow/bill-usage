@@ -53,12 +53,12 @@
   },
   "2026-01-14": {
     "planned": 128.57,
-    "actual": 119.35,
+    "actual": 123.0,
     "models": {
       "Claude Haiku 4.5": 1.65,
-      "Claude Sonnet 4.5": 33.0,
-      "Gemini 3 Flash": 62.04,
-      "Gemini 3 Pro": 22.0,
+      "Claude Sonnet 4.5": 34.0,
+      "Gemini 3 Flash": 63.69,
+      "Gemini 3 Pro": 23.0,
       "GPT-5.1-Codex-Mini": 0.66
     }
   },
