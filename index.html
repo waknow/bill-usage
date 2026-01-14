@@ -156,6 +156,18 @@
 
     <script>
         let currentChart = null;
+        
+        // Base URL configuration: Use Raw GitHub to avoid GitHub Pages CDN cache
+        const BASE_DATA_URL = 'https://raw.githubusercontent.com/waknow/bill-usage/refs/heads/main/data/';
+        
+        function getFetchUrl(path) {
+            // Check if running locally (file protocol or localhost)
+            const isLocal = window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1' || 
+                            window.location.protocol === 'file:';
+            // Use local path for local testing, otherwise use the Raw GitHub URL
+            return isLocal ? path : BASE_DATA_URL + path.replace('data/', '');
+        }
 
         async function init() {
             const yearSelect = document.getElementById('yearSelect');
@@ -183,7 +195,7 @@
             }
 
             try {
-                const latestRes = await fetch('data/latest.json');
+                const latestRes = await fetch(getFetchUrl('data/latest.json'));
                 if (!latestRes.ok) throw new Error();
                 const latest = await latestRes.json();
                 yearSelect.value = latest.year;
@@ -199,12 +211,12 @@
         async function loadSelectedData() {
             const year = document.getElementById('yearSelect').value;
             const month = document.getElementById('monthSelect').value;
-            const filePath = `data/${year}/${year}-${month}.json`;
+            const path = `data/${year}/${year}-${month}.json`;
 
             document.getElementById('chartTitle').textContent = `Monthly Usage Progress: ${year}-${month}`;
 
             try {
-                const response = await fetch(filePath);
+                const response = await fetch(getFetchUrl(path));
                 if (!response.ok) throw new Error('Data not found');
                 const data = await response.json();
                 renderChart(data);
