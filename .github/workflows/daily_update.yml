@@ -2,7 +2,10 @@ name: Daily Usage Update
 
 on:
   schedule:
-    - cron: '00 15 * * *'  # Runs at 23:00 Asia/Shanghai time daily
+    # Runs at 10:00-18:00 Asia/Shanghai time daily
+    - cron: '0 2-10 * * *' 
+    # Runs at 23:00 Asia/Shanghai time daily
+    - cron: '00 15 * * *'  
   workflow_dispatch: # Allows manual trigger
 
 jobs:
