@@ -26,12 +26,10 @@ def fetch_holiday_config(year):
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        print(f"Warning: Failed to fetch holidays for {year}: {e}")
-        return None
+        print(f"Warning: Failed to fetch holidays for {year}: {e}. Falling back to standard weekend logic.")
+        return {}
 
-def calculate_planned_usage(settings, holidays_config, start_date, end_date):
-    total_target = settings["total_target"]
-    
+def calculate_planned_usage(total_target, holidays_config, start_date, end_date):
     workdays = []
     curr = start_date
     while curr <= end_date:
@@ -56,19 +54,19 @@ def calculate_planned_usage(settings, holidays_config, start_date, end_date):
         
     return planned
 
-def fetch_actual_usage(settings):
+def fetch_actual_usage():
     # Get user billing premium request usage report
     # https://docs.github.com/en/rest/billing/usage?apiVersion=2022-11-28#get-billing-premium-request-usage-report-for-a-user
     
     token = os.getenv("GITHUB_TOKEN")
     if not token:
         print("GITHUB_TOKEN not found, skipping actual usage fetch.")
-        return {}, None
+        return {}
 
-    username = os.getenv("GITHUB_USER") or settings.get("github_user")
-    if not username or username == "YOUR_GITHUB_USERNAME":
-        print("GITHUB_USER environment variable or settings.github_user not set.")
-        return {}, None
+    username = os.getenv("GITHUB_USER")
+    if not username:
+        print("GITHUB_USER environment variable not set.")
+        return {}
 
     now = datetime.now()
     year = now.year
@@ -91,9 +89,6 @@ def fetch_actual_usage(settings):
         response.raise_for_status()
         data = response.json()
         
-        # Try to get the limit/quota from the response if available
-        fetched_limit = data.get("limit") or data.get("quota")
-        
         total_month_usage = 0
         model_stats = {}
         if "usageItems" in data:
@@ -105,15 +100,12 @@ def fetch_actual_usage(settings):
         
         # Return today's date with the current month-to-date total and breakdown
         today_str = now.strftime("%Y-%m-%d")
-        return {today_str: {"total": round(total_month_usage, 2), "models": model_stats}}, fetched_limit
+        return {today_str: {"total": round(total_month_usage, 2), "models": model_stats}}
     except Exception as e:
         print(f"Error fetching actual usage: {e}")
-        return {}, None
+        return {}
 
 def main():
-    with open("config/settings.json", "r") as f:
-        settings = json.load(f)
-    
     # Calculate for the current month
     today = datetime.now()
     start_date = today.replace(day=1)
@@ -125,18 +117,19 @@ def main():
     
     holidays_config = {}
     config = fetch_holiday_config(today.year)
-    if config:
-        holidays_config[str(today.year)] = config
+    holidays_config[str(today.year)] = config
         
-    actual, fetched_limit = fetch_actual_usage(settings)
+    actual = fetch_actual_usage()
     
-    if fetched_limit:
-        print(f"Fetched limit from API: {fetched_limit}")
-        settings["total_target"] = fetched_limit
-    elif "total_target" not in settings:
-        settings["total_target"] = 300 # Default if everything else fails
+    # Get target from environment or default
+    env_quota = os.getenv("COPILOT_QUOTA")
+    try:
+        total_target = float(env_quota) if env_quota else 300
+        print(f"Using total_target: {total_target}")
+    except ValueError:
+        total_target = 300
         
-    planned = calculate_planned_usage(settings, holidays_config, start_date, end_date)
+    planned = calculate_planned_usage(total_target, holidays_config, start_date, end_date)
     
     # Data per month
     year_str = today.strftime("%Y")

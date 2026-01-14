@@ -5,7 +5,7 @@
 
 ## Architecture Overview
 - **Data Flow**: Python script (`scripts/update_usage.py`) fetches billing data -> Hierarchical storage (`data/YYYY/YYYY-MM.json`) -> Dashboard (`index.html`) visualizes via Chart.js.
-- **Quota Logic**: Uses a default monthly quota (300) as the API limit extraction is currently unreliable. Target lines are calculated based on *workdays* fetched from the `holiday-cn` API.
+- **Quota Logic**: Uses a monthly quota from the `COPILOT_QUOTA` environment variable (defaults to 300). Target lines are calculated based on *workdays* fetched from the `holiday-cn` API.
 - **Entry Points**: 
   - `data/latest.json`: Pointer for the frontend to find the most recent month.
   - `scripts/update_usage.py`: Main logic for data aggregation.
@@ -20,8 +20,8 @@
   - Stacked bars for model breakdown, single line for daily target.
 
 ## Developer Workflows
-- **Secrets**: Uses repository level secrets (`API_TOKEN`, `API_USER`) instead of environment-specific ones.
-- **Running Locally**: Requires `API_TOKEN` and `API_USER` environment variables.
+- **Secrets & Variables**: Uses repository level secrets (`API_TOKEN`) and variables (`API_USER`, `COPILOT_QUOTA`).
+- **Running Locally**: Requires `API_TOKEN` and `API_USER` environment variables. `COPILOT_QUOTA` is optional.
 - **Adding New Models**: The script automatically detects new model names from the API response (`usageItems`). No hardcoding required.
 - **Debugging**: Inspect JSON outputs in `data/` to verify calibration between `actual` (total) and `models` (breakdown).
 

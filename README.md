@@ -24,10 +24,12 @@ This project tracks GitHub Copilot "Premium Request" usage and compares it again
 ## Setup
 
 1. **Fork/Clone**: Set up this repository.
-2. **Configure Secrets**: 
-   - Add two **Repository Secrets** to your GitHub repository:
+2. **Configure Secrets & Variables**: 
+   - Add the following **Repository Secret**:
      - `API_TOKEN`: A Personal Access Token (PAT) with `read:user` or `billing:read` scope.
+   - Add the following **Repository Variables**:
      - `API_USER`: Your GitHub username.
+     - `COPILOT_QUOTA` (Optional): Your monthly usage limit (defaults to `300`).
 3. **Enable GitHub Pages**: Go to **Settings > Pages** and set the source to the `main` branch root.
 
 ## Development

@@ -32,7 +32,8 @@ jobs:
       - name: Run update script
         env:
           GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
-          GITHUB_USER : ${{ secrets.API_USER }}
+          GITHUB_USER : ${{ vars.API_USER }}
+          COPILOT_QUOTA: ${{ vars.COPILOT_QUOTA }}
         run: python scripts/update_usage.py
 
       - name: Commit and push changes
