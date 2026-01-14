@@ -2,7 +2,7 @@ name: Daily Usage Update
 
 on:
   schedule:
-    - cron: '30 23 * * *'  # Runs at 23:30 UTC every day
+    - cron: '00 15 * * *'  # Runs at 23:00 Asia/Shanghai time daily
   workflow_dispatch: # Allows manual trigger
 
 jobs:
@@ -11,6 +11,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: 检查时间
+        run: |
+          export TZ='Asia/Shanghai'
+          date
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
