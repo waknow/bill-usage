@@ -7,22 +7,29 @@ def is_workday(date: datetime, holidays_config):
     date_str = date.strftime("%Y-%m-%d")
     year = str(date.year)
     
-    if year not in holidays_config:
-        # Default to weekend check if year not in config
-        return date.weekday() < 5
+    if year in holidays_config:
+        year_config = holidays_config[year]
+        # Handle new format: list of days with isOffDay
+        if "days" in year_config:
+            for day in year_config["days"]:
+                if day["date"] == date_str:
+                    return not day["isOffDay"]
     
-    year_config = holidays_config[year]
-    if date_str in year_config.get("workdays", []):
-        return True
-    if date_str in year_config.get("holidays", []):
-        return False
-    
-    # Standard weekend check
+    # If not defined, Saturday (5) and Sunday (6) are holidays
     return date.weekday() < 5
 
-def calculate_planned_usage(settings, holidays_config):
-    start_date = datetime.strptime(settings["start_date"], "%Y-%m-%d")
-    end_date = datetime.strptime(settings["end_date"], "%Y-%m-%d")
+def fetch_holiday_config(year):
+    url = f"https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/{year}.json"
+    try:
+        print(f"Fetching holidays for {year} from {url}...")
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"Warning: Failed to fetch holidays for {year}: {e}")
+        return None
+
+def calculate_planned_usage(settings, holidays_config, start_date, end_date):
     total_target = settings["total_target"]
     
     workdays = []
@@ -100,14 +107,28 @@ def fetch_actual_usage(settings):
 def main():
     with open("config/settings.json", "r") as f:
         settings = json.load(f)
-    with open("config/holidays.json", "r") as f:
-        holidays_config = json.load(f)
+    
+    # Calculate for the current month
+    today = datetime.now()
+    start_date = today.replace(day=1)
+    # Get last day of month
+    if today.month == 12:
+        end_date = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+    else:
+        end_date = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
+    
+    holidays_config = {}
+    config = fetch_holiday_config(today.year)
+    if config:
+        holidays_config[str(today.year)] = config
         
-    planned = calculate_planned_usage(settings, holidays_config)
+    planned = calculate_planned_usage(settings, holidays_config, start_date, end_date)
     actual = fetch_actual_usage(settings)
     
-    # Load existing data if any
-    data_file = "data/usage.json"
+    # Data per month
+    month_str = today.strftime("%Y-%m")
+    data_file = f"data/usage_{month_str}.json"
+    
     if os.path.exists(data_file):
         with open(data_file, "r") as f:
             history = json.load(f)
@@ -115,14 +136,11 @@ def main():
         history = {}
 
     # Merge data
-    # We want to keep historical actuals and update with new ones
-    # Calculate cumulative actuals if the API returns daily values
-    sorted_actual_dates = sorted(actual.keys())
+    # Calculate cumulative actuals from daily values for this month
+    sorted_actual_dates = sorted([d for d in actual.keys() if d.startswith(month_str)])
     cumulative_actual = 0
     actual_cumulative_map = {}
     
-    # If we have history, we might want to start from the last known cumulative value
-    # But for simplicity, let's assume we recalculate from the API data provided
     for date_str in sorted_actual_dates:
         cumulative_actual += actual[date_str]
         actual_cumulative_map[date_str] = cumulative_actual
@@ -142,9 +160,11 @@ def main():
     # Sort by date
     sorted_history = dict(sorted(history.items()))
 
+    # Ensure data directory exists
+    os.makedirs("data", exist_ok=True)
     with open(data_file, "w") as f:
         json.dump(sorted_history, f, indent=2)
-    print(f"Data updated in {data_file}")
+    print(f"Data for {month_str} updated in {data_file}")
 
 if __name__ == "__main__":
     main()

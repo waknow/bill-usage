@@ -27,3 +27,26 @@ To run the update script locally:
 export GITHUB_TOKEN=your_token
 python scripts/update_usage.py
 ```
+
+## 假日
+
+通过`https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/{年份}.json`获取
+
+格式为
+
+```python
+interface Holidays {
+  /** 完整年份, 整数。*/
+  year: number;
+  /** 所用国务院文件网址列表 */
+  papers: string[];
+  days: {
+    /** 节日名称 */
+    name: string;
+    /** 日期, ISO 8601 格式 */
+    date: string;
+    /** 是否为休息日 */
+    isOffDay: boolean;
+  }[]
+}
+```
