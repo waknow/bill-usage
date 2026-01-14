@@ -1,0 +1,16 @@
+# Local test scripts with credentials
+run_test_local.bat
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Data
+data/usage_*.json
+
+# Settings (if you want to keep your org/enterprise names private)
+# config/settings.json

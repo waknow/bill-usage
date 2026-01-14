@@ -65,9 +65,9 @@ def fetch_actual_usage(settings):
         print("GITHUB_TOKEN not found, skipping actual usage fetch.")
         return {}, None
 
-    username = settings.get("github_user")
+    username = os.getenv("GITHUB_USER") or settings.get("github_user")
     if not username or username == "YOUR_GITHUB_USERNAME":
-        print("github_user not set in settings.json.")
+        print("GITHUB_USER environment variable or settings.github_user not set.")
         return {}, None
 
     now = datetime.now()
@@ -95,13 +95,17 @@ def fetch_actual_usage(settings):
         fetched_limit = data.get("limit") or data.get("quota")
         
         total_month_usage = 0
+        model_stats = {}
         if "usageItems" in data:
             for item in data["usageItems"]:
-                total_month_usage += item.get("netQuantity", 0)
+                qty = item.get("grossQuantity", 0)
+                total_month_usage += qty
+                model_name = item.get("model", "Unknown")
+                model_stats[model_name] = round(model_stats.get(model_name, 0) + qty, 2)
         
-        # Return today's date with the current month-to-date total
+        # Return today's date with the current month-to-date total and breakdown
         today_str = now.strftime("%Y-%m-%d")
-        return {today_str: total_month_usage}, fetched_limit
+        return {today_str: {"total": round(total_month_usage, 2), "models": model_stats}}, fetched_limit
     except Exception as e:
         print(f"Error fetching actual usage: {e}")
         return {}, None
@@ -130,13 +134,16 @@ def main():
         print(f"Fetched limit from API: {fetched_limit}")
         settings["total_target"] = fetched_limit
     elif "total_target" not in settings:
-        settings["total_target"] = 1000 # Default if everything else fails
+        settings["total_target"] = 300 # Default if everything else fails
         
     planned = calculate_planned_usage(settings, holidays_config, start_date, end_date)
     
     # Data per month
+    year_str = today.strftime("%Y")
     month_str = today.strftime("%Y-%m")
-    data_file = f"data/usage_{month_str}.json"
+    year_dir = os.path.join("data", year_str)
+    os.makedirs(year_dir, exist_ok=True)
+    data_file = os.path.join(year_dir, f"{month_str}.json")
     
     if os.path.exists(data_file):
         with open(data_file, "r") as f:
@@ -145,35 +152,36 @@ def main():
         history = {}
 
     # Merge data
-    # Calculate cumulative actuals from daily values for this month
-    sorted_actual_dates = sorted([d for d in actual.keys() if d.startswith(month_str)])
-    cumulative_actual = 0
-    actual_cumulative_map = {}
-    
-    for date_str in sorted_actual_dates:
-        cumulative_actual += actual[date_str]
-        actual_cumulative_map[date_str] = cumulative_actual
-
     for date_str, val in planned.items():
         if date_str not in history:
             history[date_str] = {"planned": val, "actual": 0}
         else:
             history[date_str]["planned"] = val
             
-    for date_str, val in actual_cumulative_map.items():
+    # Update with actual values (including model breakdown)
+    for date_str, usage_data in actual.items():
         if date_str in history:
-            history[date_str]["actual"] = val
+            history[date_str]["actual"] = usage_data["total"]
+            history[date_str]["models"] = usage_data["models"]
         else:
-            history[date_str] = {"planned": 0, "actual": val}
+            history[date_str] = {
+                "planned": 0, 
+                "actual": usage_data["total"], 
+                "models": usage_data["models"]
+            }
 
     # Sort by date
     sorted_history = dict(sorted(history.items()))
 
-    # Ensure data directory exists
-    os.makedirs("data", exist_ok=True)
+    # Ensure data directory and year directory exist
+    os.makedirs(year_dir, exist_ok=True)
     with open(data_file, "w") as f:
         json.dump(sorted_history, f, indent=2)
     print(f"Data for {month_str} updated in {data_file}")
+    
+    # Update latest pointer for UI
+    with open("data/latest.json", "w") as f:
+        json.dump({"year": year_str, "month": month_str}, f, indent=2)
 
 if __name__ == "__main__":
     main()

@@ -3,80 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Usage Dashboard</title>
+    <title>GitHub Copilot Usage Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #333; }
-        canvas { margin-top: 20px; }
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --accent-color: #6366f1;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+        body { 
+            font-family: 'Inter', -apple-system, sans-serif; 
+            margin: 0; 
+            background-color: var(--bg-color); 
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+        .header {
+            padding: 24px 40px;
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin: 0; }
+        .container { 
+            max-width: 1100px; 
+            margin: 40px auto; 
+            padding: 0 24px;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            align-items: center;
+        }
+        select {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: #ffffff;
+            color: var(--text-main);
+            transition: all 0.2s;
+            cursor: pointer;
+            outline: none;
+        }
+        select:hover {
+            border-color: var(--accent-color);
+            background-color: #f1f5f9;
+        }
+        .box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 24px;
+        }
+        .box-header h2 { font-size: 1rem; font-weight: 600; color: var(--text-muted); margin: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+        .chart-container {
+            position: relative;
+            height: 450px;
+            width: 100%;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        .summary-card {
+            padding: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+        .summary-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+        .summary-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>Copilot Usage Tracker</h1>
+    </div>
+
     <div class="container">
-        <h1>Model Usage: Actual vs Planned</h1>
-        <canvas id="usageChart"></canvas>
+        <div class="controls">
+            <select id="yearSelect" onchange="loadSelectedData()"></select>
+            <select id="monthSelect" onchange="loadSelectedData()"></select>
+        </div>
+
+        <div class="box">
+            <div class="box-header">
+                <h2 id="chartTitle">Monthly Usage Progress</h2>
+            </div>
+            <div class="chart-container">
+                <canvas id="usageChart"></canvas>
+            </div>
+        </div>
+
+        <div class="summary-grid" id="modelSummary">
+            <!-- Dynamic summary cards -->
+        </div>
     </div>
 
     <script>
-        async function fetchData() {
-            const response = await fetch('data/usage.json');
-            const data = await response.json();
-            return data;
+        let currentChart = null;
+
+        async function init() {
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            
+            const now = new Date();
+            const startYear = 2025;
+            const endYear = now.getFullYear();
+
+            for (let y = endYear; y >= startYear; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            }
+
+            const locale = navigator.language || 'en';
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m.toString().padStart(2, '0');
+                // Format month using browser's locale
+                const date = new Date(2000, m - 1, 1);
+                opt.textContent = date.toLocaleString(locale, { month: 'long' });
+                monthSelect.appendChild(opt);
+            }
+
+            try {
+                const latestRes = await fetch('data/latest.json');
+                if (!latestRes.ok) throw new Error();
+                const latest = await latestRes.json();
+                yearSelect.value = latest.year;
+                monthSelect.value = latest.month.split('-')[1];
+            } catch (e) {
+                yearSelect.value = now.getFullYear();
+                monthSelect.value = (now.getMonth() + 1).toString().padStart(2, '0');
+            }
+
+            loadSelectedData();
+        }
+
+        async function loadSelectedData() {
+            const year = document.getElementById('yearSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            const filePath = `data/${year}/${year}-${month}.json`;
+
+            document.getElementById('chartTitle').textContent = `Monthly Usage Progress: ${year}-${month}`;
+
+            try {
+                const response = await fetch(filePath);
+                if (!response.ok) throw new Error('Data not found');
+                const data = await response.json();
+                renderChart(data);
+                updateSummary(data);
+            } catch (err) {
+                console.error(err);
+                renderEmptyChart(`${year}-${month}`);
+                document.getElementById('modelSummary').innerHTML = '';
+            }
+        }
+
+        function renderEmptyChart(period) {
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            if (currentChart) currentChart.destroy();
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
+                },
+                plugins: [{
+                    id: 'noData',
+                    afterDraw: (chart) => {
+                        const { ctx, width, height } = chart;
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.font = '16px "Inter", sans-serif';
+                        ctx.fillStyle = '#64748b';
+                        ctx.fillText(`No data found for ${period}`, width / 2, height / 2);
+                        ctx.restore();
+                    }
+                }]
+            });
         }
 
         function renderChart(data) {
             const labels = Object.keys(data);
             const plannedData = labels.map(date => data[date].planned);
-            const actualData = labels.map(date => data[date].actual);
+            
+            const modelNames = new Set();
+            labels.forEach(date => {
+                if (data[date].models) {
+                    Object.keys(data[date].models).forEach(m => modelNames.add(m));
+                }
+            });
+            const sortedModels = Array.from(modelNames).sort();
+
+            const datasets = [];
+
+            datasets.push({
+                label: 'Planned Target',
+                data: plannedData,
+                borderColor: '#ef4444',
+                borderWidth: 2,
+                borderDash: [6, 4],
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0,
+                type: 'line',
+                order: 0
+            });
+
+            const colors = [
+                '#6366f1', // indigo
+                '#10b981', // emerald
+                '#f59e0b', // amber
+                '#06b6d4', // cyan
+                '#f43f5e', // rose
+                '#8b5cf6', // violet
+                '#475569'  // slate
+            ];
+
+            sortedModels.forEach((model, index) => {
+                datasets.push({
+                    label: model,
+                    data: labels.map(date => (data[date].models ? data[date].models[model] || 0 : 0)),
+                    backgroundColor: colors[index % colors.length],
+                    borderRadius: 4,
+                    stack: 'actual',
+                    type: 'bar',
+                    order: 1
+                });
+            });
 
             const ctx = document.getElementById('usageChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
+            if (currentChart) currentChart.destroy();
+
+            currentChart = new Chart(ctx, {
                 data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Planned Usage',
-                            data: plannedData,
-                            borderColor: 'rgba(54, 162, 235, 1)',
-                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                            borderDash: [5, 5],
-                            fill: false,
-                            tension: 0.1
-                        },
-                        {
-                            label: 'Actual Usage',
-                            data: actualData,
-                            borderColor: 'rgba(255, 99, 132, 1)',
-                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                            fill: true,
-                            tension: 0.1
-                        }
-                    ]
+                    labels: labels.map(l => parseInt(l.split('-')[2])),
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'Date' }
+                        x: { 
+                            stacked: true, 
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
                         },
-                        y: {
-                            title: { display: true, text: 'Usage' },
-                            beginAtZero: true
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            border: { display: false },
+                            ticks: { color: '#64748b', font: { size: 11 } }
                         }
                     },
                     plugins: {
                         tooltip: {
-                            mode: 'index',
-                            intersect: false
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            titleFont: { size: 13, weight: '700' },
+                            bodyFont: { size: 12 },
+                            cornerRadius: 8,
+                            callbacks: {
+                                footer: (items) => {
+                                    let total = 0;
+                                    items.forEach(item => { if (item.dataset.type === 'bar') total += item.raw; });
+                                    return `Total: ${total.toFixed(1)}`;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            padding: 24,
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 6,
+                                boxHeight: 6,
+                                padding: 20,
+                                font: { size: 12, weight: '500' },
+                                color: '#1e293b'
+                            }
                         }
                     }
                 }
             });
         }
 
-        fetchData().then(renderChart).catch(err => console.error('Error loading data:', err));
+        function updateSummary(data) {
+            const container = document.getElementById('modelSummary');
+            container.innerHTML = '';
+            const lastDate = Object.keys(data).sort().pop();
+            const dateData = data[lastDate];
+            if (!dateData || !dateData.models) return;
+
+            addSummaryCard('Total Month-to-Date', (dateData.actual || 0).toFixed(2), (dateData.actual > dateData.planned) ? '#cf222e' : '#2da44e');
+            Object.entries(dateData.models).sort((a,b) => b[1] - a[1]).forEach(([name, val]) => {
+                addSummaryCard(name, val.toFixed(2));
+            });
+        }
+
+        function addSummaryCard(label, value, color) {
+            const div = document.createElement('div');
+            div.className = 'summary-card';
+            div.innerHTML = `<div class="summary-label">${label}</div><div class="summary-value" style="color: ${color || 'inherit'}">${value}</div>`;
+            document.getElementById('modelSummary').appendChild(div);
+        }
+
+        init();
     </script>
 </body>
 </html>
