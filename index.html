@@ -168,6 +168,48 @@
             color: var(--accent-color);
             flex-shrink: 0;
         }
+
+        /* Tooltip style */
+        .tooltip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.4;
+            pointer-events: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -210,14 +252,19 @@
         <div class="box">
             <div class="box-header">
                 <h2 id="chartTitle">Monthly Usage Progress</h2>
+                <div id="remainingIndicator" style="font-size: 14px; font-weight: 600;"></div>
             </div>
             <div class="chart-container">
                 <canvas id="usageChart"></canvas>
             </div>
         </div>
 
+        <div class="summary-grid" id="statsSummary" style="margin-bottom: 24px;">
+            <!-- Overall statistics -->
+        </div>
+
         <div class="summary-grid" id="modelSummary">
-            <!-- Dynamic summary cards -->
+            <!-- Dynamic model summary cards -->
         </div>
     </div>
 
@@ -574,23 +621,101 @@
         }
 
         function updateSummary(data) {
-            const container = document.getElementById('modelSummary');
-            container.innerHTML = '';
-            const lastDate = Object.keys(data).sort().pop();
-            const dateData = data[lastDate];
-            if (!dateData || !dateData.models) return;
+            const statsContainer = document.getElementById('statsSummary');
+            const modelsContainer = document.getElementById('modelSummary');
+            statsContainer.innerHTML = '';
+            modelsContainer.innerHTML = '';
+            
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const keys = Object.keys(data).sort();
+            const lastDate = keys[keys.length - 1];
 
-            addSummaryCard('Total Month-to-Date', (dateData.actual || 0).toFixed(2), (dateData.actual > dateData.planned) ? '#cf222e' : '#2da44e');
-            Object.entries(dateData.models).sort((a,b) => b[1] - a[1]).forEach(([name, val]) => {
-                addSummaryCard(name, val.toFixed(2));
-            });
+            // 1. Calculate Remaining & Monthly Progress
+            let currentActual = 0;
+            for (let i = keys.length - 1; i >= 0; i--) {
+                if (data[keys[i]].actual !== undefined && keys[i] <= todayStr) {
+                    currentActual = data[keys[i]].actual;
+                    break;
+                }
+            }
+
+            const currentPlanned = data[todayStr] ? data[todayStr].planned : (data[lastDate] ? data[lastDate].planned : 0);
+            const remaining = currentPlanned - currentActual;
+
+            // 2. Update Header Indicator (Only for current month)
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const isCurrentMonth = (yearSelect.value == now.getFullYear() && monthSelect.value == (now.getMonth() + 1).toString().padStart(2, '0'));
+            const indicator = document.getElementById('remainingIndicator');
+            
+            if (isCurrentMonth && indicator) {
+                if (remaining >= 0) {
+                    indicator.innerHTML = `Remaining Today: <span style="color: var(--success-color)">+${remaining.toFixed(0)}</span>`;
+                } else {
+                    indicator.innerHTML = `Overused Today: <span style="color: var(--danger-color)">${remaining.toFixed(0)}</span>`;
+                }
+                indicator.style.display = 'block';
+            } else if (indicator) {
+                indicator.style.display = 'none';
+            }
+
+            // 3. Add Summary Cards
+            if (isCurrentMonth) {
+                const color = remaining >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
+                addSummaryCard('Remaining Today', remaining.toFixed(1), color, statsContainer);
+            }
+            
+            addSummaryCard('Total Month-to-Date', currentActual.toFixed(1), 
+                (currentActual > currentPlanned) ? 'var(--danger-color)' : 'var(--success-color)', 
+                statsContainer, `/ ${currentPlanned.toFixed(0)}`, 'Target is calculated based on monthly quota and workdays distribution');
+
+            // Model breakdown (find last day with models)
+            let modelData = null;
+            for (let i = keys.length - 1; i >= 0; i--) {
+                if (data[keys[i]].models) {
+                    modelData = data[keys[i]].models;
+                    break;
+                }
+            }
+
+            if (modelData) {
+                const totalModelUsage = Object.values(modelData).reduce((a, b) => a + b, 0);
+                Object.entries(modelData).sort((a,b) => b[1] - a[1]).forEach(([name, val]) => {
+                    const percentage = totalModelUsage > 0 ? (val / totalModelUsage * 100).toFixed(1) : 0;
+                    addSummaryCard(name, val.toFixed(2), null, modelsContainer, `${percentage}%`);
+                });
+            }
         }
 
-        function addSummaryCard(label, value, color) {
+        function addSummaryCard(label, value, color, container, subtitle, info) {
+            const target = container || document.getElementById('modelSummary');
             const div = document.createElement('div');
             div.className = 'summary-card';
-            div.innerHTML = `<div class="summary-label">${label}</div><div class="summary-value" style="color: ${color || 'inherit'}">${value}</div>`;
-            document.getElementById('modelSummary').appendChild(div);
+            
+            let html = `<div class="summary-label">${label}</div>`;
+            html += `<div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">`;
+            html += `<div class="summary-value" style="color: ${color || 'inherit'}">${value}</div>`;
+            
+            if (subtitle) {
+                html += `<div style="font-size: 18px; color: var(--text-muted); font-weight: 500;">${subtitle}</div>`;
+            }
+            
+            if (info) {
+                // Using custom CSS tooltip for better visibility
+                html += `<div class="tooltip" style="cursor: help; margin-left: 2px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); opacity: 0.7; vertical-align: middle;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span class="tooltip-text">${info}</span>
+                </div>`;
+            }
+            
+            html += `</div>`;
+            div.innerHTML = html;
+            target.appendChild(div);
         }
 
         init();
