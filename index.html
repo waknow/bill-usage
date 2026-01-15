@@ -285,7 +285,7 @@
                 if (latestData.next_run) {
                     const nextDate = new Date(latestData.next_run);
                     document.getElementById('scheduleInfo').textContent = 
-                        `Next Automation: ${nextDate.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })} (Local)`;
+                        `Next Schedule at ${nextDate.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`;
                 }
             } catch (e) {
                 if (!window._manuallyChanged) {
@@ -341,7 +341,7 @@
             const updateLabel = document.getElementById('lastUpdateTime');
             if (latestData && latestData.year === year && latestData.month === period) {
                 const date = new Date(latestData.last_update);
-                updateLabel.textContent = `Last update: ${date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`;
+                updateLabel.textContent = `Updated at ${date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`;
                 updateLabel.style.display = 'block';
             } else {
                 updateLabel.style.display = 'none';

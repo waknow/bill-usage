@@ -241,7 +241,7 @@ def main():
         json.dump({
             "year": year_str, 
             "month": month_str,
-            "last_update": datetime.now().isoformat(),
+            "last_update": datetime.now().astimezone().isoformat(),
             "next_run": next_run_iso,
             "crons": list(set(all_crons)) # Just for record
         }, f, indent=2)
