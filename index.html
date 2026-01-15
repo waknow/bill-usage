@@ -43,6 +43,18 @@
             gap: 12px;
             margin-bottom: 32px;
             align-items: center;
+            flex-wrap: wrap;
+        }
+        .status-labels {
+            display: flex;
+            gap: 16px;
+            margin-left: auto;
+            align-items: center;
+        }
+        .update-item {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
         }
         select {
             padding: 8px 16px;
@@ -100,6 +112,49 @@
             margin-right: 12px;
             flex-shrink: 0;
         }
+        .update-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .schedule-info {
+            font-size: 11px;
+            color: var(--text-muted);
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+        .refresh-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            margin-left: 16px;
+            padding-left: 16px;
+            border-left: 1px solid var(--border-color);
+        }
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: #f5f3ff;
+        }
+        .auto-refresh-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
         .header-content {
             display: flex;
             align-items: center;
@@ -138,6 +193,18 @@
         <div class="controls">
             <select id="yearSelect" onchange="loadSelectedData()"></select>
             <select id="monthSelect" onchange="loadSelectedData()"></select>
+            <div class="status-labels">
+                <div class="update-item">
+                    <div class="update-time" id="lastUpdateTime"></div>
+                    <div class="schedule-info" id="scheduleInfo"></div>
+                </div>
+                <div class="refresh-controls">
+                    <button class="refresh-btn" onclick="manualRefresh()">Refresh Now</button>
+                    <label class="auto-refresh-label">
+                        <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" checked> Auto Refresh
+                    </label>
+                </div>
+            </div>
         </div>
 
         <div class="box">
@@ -156,6 +223,8 @@
 
     <script>
         let currentChart = null;
+        let latestData = null; // Store latest info (year, month, update time, cron)
+        let autoRefreshInterval = null;
         
         // Base URL configuration: Use Raw GitHub to avoid GitHub Pages CDN cache
         const BASE_DATA_URL = 'https://raw.githubusercontent.com/waknow/bill-usage/refs/heads/main/data/';
@@ -166,7 +235,12 @@
                             window.location.hostname === '127.0.0.1' || 
                             window.location.protocol === 'file:';
             // Use local path for local testing, otherwise use the Raw GitHub URL
-            return isLocal ? path : BASE_DATA_URL + path.replace('data/', '');
+            // Add cache busting timestamp for the latest.json if not local
+            let url = isLocal ? path : BASE_DATA_URL + path.replace('data/', '');
+            if (!isLocal && path.includes('latest.json')) {
+                url += `?t=${Date.now()}`;
+            }
+            return url;
         }
 
         async function init() {
@@ -177,43 +251,101 @@
             const startYear = 2025;
             const endYear = now.getFullYear();
 
-            for (let y = endYear; y >= startYear; y--) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                yearSelect.appendChild(opt);
-            }
+            // Only clear and rebuild if empty
+            if (yearSelect.options.length === 0) {
+                for (let y = endYear; y >= startYear; y--) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    yearSelect.appendChild(opt);
+                }
 
-            const locale = navigator.language || 'en';
-            for (let m = 1; m <= 12; m++) {
-                const opt = document.createElement('option');
-                opt.value = m.toString().padStart(2, '0');
-                // Format month using browser's locale
-                const date = new Date(2000, m - 1, 1);
-                opt.textContent = date.toLocaleString(locale, { month: 'long' });
-                monthSelect.appendChild(opt);
+                const locale = navigator.language || 'en';
+                for (let m = 1; m <= 12; m++) {
+                    const opt = document.createElement('option');
+                    opt.value = m.toString().padStart(2, '0');
+                    const date = new Date(2000, m - 1, 1);
+                    opt.textContent = date.toLocaleString(locale, { month: 'long' });
+                    monthSelect.appendChild(opt);
+                }
             }
 
             try {
                 const latestRes = await fetch(getFetchUrl('data/latest.json'));
                 if (!latestRes.ok) throw new Error();
-                const latest = await latestRes.json();
-                yearSelect.value = latest.year;
-                monthSelect.value = latest.month.split('-')[1];
+                latestData = await latestRes.json();
+                
+                // Set defaults if not manually changed yet
+                if (!window._manuallyChanged) {
+                    yearSelect.value = latestData.year;
+                    monthSelect.value = latestData.month.split('-')[1];
+                }
+
+                // Show next run info
+                if (latestData.next_run) {
+                    const nextDate = new Date(latestData.next_run);
+                    document.getElementById('scheduleInfo').textContent = 
+                        `Next Automation: ${nextDate.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })} (Local)`;
+                }
             } catch (e) {
-                yearSelect.value = now.getFullYear();
-                monthSelect.value = (now.getMonth() + 1).toString().padStart(2, '0');
+                if (!window._manuallyChanged) {
+                    yearSelect.value = now.getFullYear();
+                    monthSelect.value = (now.getMonth() + 1).toString().padStart(2, '0');
+                }
             }
 
             loadSelectedData();
+            toggleAutoRefresh();
+        }
+
+        function manualRefresh() {
+            const btn = document.querySelector('.refresh-btn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Updating...';
+            btn.disabled = true;
+            
+            init().finally(() => {
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 500);
+            });
+        }
+
+        function toggleAutoRefresh() {
+            const isEnabled = document.getElementById('autoRefreshToggle').checked;
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            
+            if (isEnabled) {
+                // Refresh every 5 minutes
+                autoRefreshInterval = setInterval(init, 5 * 60 * 1000);
+            }
         }
 
         async function loadSelectedData() {
-            const year = document.getElementById('yearSelect').value;
-            const month = document.getElementById('monthSelect').value;
-            const path = `data/${year}/${year}-${month}.json`;
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            
+            // Mark as manually changed after first load
+            yearSelect.onmousedown = () => window._manuallyChanged = true;
+            monthSelect.onmousedown = () => window._manuallyChanged = true;
 
-            document.getElementById('chartTitle').textContent = `Monthly Usage Progress: ${year}-${month}`;
+            const year = yearSelect.value;
+            const month = monthSelect.value;
+            const period = `${year}-${month}`;
+            const path = `data/${year}/${period}.json`;
+
+            document.getElementById('chartTitle').textContent = `Monthly Usage Progress: ${period}`;
+
+            // Show last update time ONLY if selecting the latest available month
+            const updateLabel = document.getElementById('lastUpdateTime');
+            if (latestData && latestData.year === year && latestData.month === period) {
+                const date = new Date(latestData.last_update);
+                updateLabel.textContent = `Last update: ${date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`;
+                updateLabel.style.display = 'block';
+            } else {
+                updateLabel.style.display = 'none';
+            }
 
             try {
                 const response = await fetch(getFetchUrl(path));
@@ -297,12 +429,13 @@
                 data: efficiencyData,
                 yAxisID: 'yEfficiency',
                 pointRadius: 0,
-                borderWidth: 0,
+                borderWidth: 1,
+                borderColor: 'rgba(0,0,0,0.05)',
                 tension: 0.3,
                 fill: {
                     target: 'origin',
-                    above: 'rgba(207, 34, 46, 0.08)',
-                    below: 'rgba(9, 105, 218, 0.05)'
+                    above: 'rgba(239, 68, 68, 0.15)', // Rose tint (over usage)
+                    below: 'rgba(34, 197, 94, 0.15)'  // Green tint (efficient)
                 },
                 type: 'line',
                 order: 10 // Bottom
@@ -312,9 +445,9 @@
             datasets.push({
                 label: 'Planned Target',
                 data: plannedData,
-                borderColor: '#ef4444',
+                borderColor: '#6366f1',
                 borderWidth: 2,
-                borderDash: [6, 4],
+                borderDash: [5, 5],
                 fill: false,
                 tension: 0.4,
                 pointRadius: 0,
@@ -323,13 +456,23 @@
             });
 
             // 3. Actual Usage Bars (Stacked)
-            const colors = ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#f43f5e', '#8b5cf6', '#475569'];
+            // Modern Vivid Palette
+            const colors = [
+                '#818cf8', // Indigo
+                '#38bdf8', // Sky
+                '#34d399', // Emerald
+                '#fbbf24', // Amber
+                '#f87171', // Red/Rose
+                '#a78bfa', // Violet
+                '#2dd4bf'  // Teal
+            ];
             sortedModels.forEach((model, index) => {
                 datasets.push({
                     label: model,
                     data: labels.map(date => (data[date].models ? data[date].models[model] || 0 : 0)),
                     backgroundColor: colors[index % colors.length],
                     borderRadius: 4,
+                    borderWidth: 0,
                     stack: 'actual',
                     type: 'bar',
                     order: 1
@@ -348,17 +491,40 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                boxHeight: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                                font: { size: 12, weight: '500' }
+                            }
+                        }
+                    },
                     scales: {
                         x: { 
                             stacked: true, 
                             grid: { display: false },
-                            ticks: { color: '#64748b', font: { size: 11 } }
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { size: 11 },
+                                maxRotation: 0
+                            }
                         },
                         y: { 
                             beginAtZero: true,
-                            grid: { color: '#f1f5f9' },
-                            border: { display: false },
-                            ticks: { color: '#64748b', font: { size: 11 } }
+                            stacked: true,
+                            grid: { color: '#f8fafc' },
+                            border: { dash: [4, 4], display: false },
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { size: 11 },
+                                callback: (v) => v.toFixed(0)
+                            }
                         },
                         yEfficiency: {
                             display: false,
