@@ -200,15 +200,17 @@ def main():
             history[date_str]["planned"] = val
             
     # Update with actual values (including model breakdown)
+    last_update = datetime.now().astimezone().isoformat()
     for date_str, usage_data in actual.items():
         if date_str in history:
             history[date_str]["actual"] = usage_data["total"]
             history[date_str]["models"] = usage_data["models"]
+            history[date_str]["last_update"] = last_update
         else:
             history[date_str] = {
                 "planned": 0, 
                 "actual": usage_data["total"], 
-                "models": usage_data["models"]
+                "models": usage_data["models"],
             }
 
     # Sort by date
