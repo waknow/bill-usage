@@ -397,9 +397,20 @@
             try {
                 const response = await fetch(getFetchUrl(path));
                 if (!response.ok) throw new Error('Data not found');
-                const data = await response.json();
-                renderChart(data);
-                updateSummary(data);
+                const json = await response.json();
+                
+                // Support both old and new format
+                const data = json.data || json;
+                
+                // Update label if monthly data has metadata
+                if (json.last_updated) {
+                    const date = new Date(json.last_updated);
+                    updateLabel.textContent = `Updated at ${date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`;
+                    updateLabel.style.display = 'block';
+                }
+
+                renderChart(json);
+                updateSummary(json);
             } catch (err) {
                 console.error(err);
                 renderEmptyChart(`${year}-${month}`);
@@ -442,10 +453,11 @@
             });
         }
 
-        function renderChart(data) {
+        function renderChart(json) {
+            // Support both old and new format
+            const data = json.data || json;
             const labels = Object.keys(data);
             const plannedData = labels.map(date => data[date].planned);
-            const actualData = labels.map(date => data[date].actual || 0);
 
             const modelNames = new Set();
             labels.forEach(date => {
@@ -457,13 +469,14 @@
 
             const now = new Date();
             const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const lastUpdateStr = json.last_updated ? json.last_updated.split('T')[0] : todayStr;
 
             const efficiencyData = labels.map((date, i) => {
                 // Do not draw efficiency background for future dates
-                if (date > todayStr) return null;
+                if (date > lastUpdateStr) return null;
 
                 const p = plannedData[i];
-                const a = actualData[i];
+                const a = data[date].actual || 0;
                 let val = (p > 0) ? ((a / p) - 1) * 100 : 0;
                 return Math.min(Math.max(val, -100), 100);
             });
@@ -471,6 +484,20 @@
             const datasets = [];
 
             // 1. Efficiency Background (Area)
+            // ... (rest of the function)
+            // Note: need to make sure bars also follow lastUpdateStr if they are cumulative?
+            // Actually actualData is cumulative in data/YYYY-MM.json? 
+            // Let's check update_usage.py again.
+            // In update_usage.py: history[date_str]["actual"] = usage_data["total"]
+            // usage_data["total"] is total_month_usage.
+            // Yes, actual is cumulative.
+            
+            // So if date > lastUpdateStr, we should probably set actual to null or 0 for the chart.
+            // Currently actualData = labels.map(date => data[date].actual || 0);
+            const chartActualData = labels.map(date => (date <= lastUpdateStr ? (data[date].actual || 0) : null));
+            
+            // Wait, models are also in the bars. 
+            // If date > lastUpdateStr, the bars should be empty.
             datasets.push({
                 label: 'Efficiency Variance',
                 data: efficiencyData,
@@ -516,7 +543,10 @@
             sortedModels.forEach((model, index) => {
                 datasets.push({
                     label: model,
-                    data: labels.map(date => (data[date].models ? data[date].models[model] || 0 : 0)),
+                    data: labels.map(date => {
+                        if (date > lastUpdateStr) return null;
+                        return (data[date].models ? data[date].models[model] || 0 : 0);
+                    }),
                     backgroundColor: colors[index % colors.length],
                     borderRadius: 4,
                     borderWidth: 0,
@@ -620,7 +650,9 @@
             });
         }
 
-        function updateSummary(data) {
+        function updateSummary(json) {
+            // Support both old and new format
+            const data = json.data || json;
             const statsContainer = document.getElementById('statsSummary');
             const modelsContainer = document.getElementById('modelSummary');
             statsContainer.innerHTML = '';
@@ -628,19 +660,23 @@
             
             const now = new Date();
             const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const lastUpdateDateStr = json.last_updated ? json.last_updated.split('T')[0] : todayStr;
             const keys = Object.keys(data).sort();
             const lastDate = keys[keys.length - 1];
 
             // 1. Calculate Remaining & Monthly Progress
-            let currentActual = 0;
-            for (let i = keys.length - 1; i >= 0; i--) {
-                if (data[keys[i]].actual !== undefined && keys[i] <= todayStr) {
-                    currentActual = data[keys[i]].actual;
-                    break;
+            // Use last_actual if available, otherwise fallback to finding the latest value in history
+            let currentActual = json.last_actual !== undefined ? json.last_actual : 0;
+            if (json.last_actual === undefined) {
+                for (let i = keys.length - 1; i >= 0; i--) {
+                    if (data[keys[i]].actual !== undefined && keys[i] <= todayStr) {
+                        currentActual = data[keys[i]].actual;
+                        break;
+                    }
                 }
             }
 
-            const currentPlanned = data[todayStr] ? data[todayStr].planned : (data[lastDate] ? data[lastDate].planned : 0);
+            const currentPlanned = data[lastUpdateDateStr] ? data[lastUpdateDateStr].planned : (data[lastDate] ? data[lastDate].planned : 0);
             const remaining = currentPlanned - currentActual;
 
             // 2. Update Header Indicator (Only for current month)

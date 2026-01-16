@@ -188,7 +188,12 @@ def main():
     
     if os.path.exists(data_file):
         with open(data_file, "r") as f:
-            history = json.load(f)
+            raw_history = json.load(f)
+            # Support both old and new format during migration
+            if "data" in raw_history:
+                history = raw_history["data"]
+            else:
+                history = raw_history
     else:
         history = {}
 
@@ -200,18 +205,22 @@ def main():
             history[date_str]["planned"] = val
             
     # Update with actual values (including model breakdown)
-    last_update = datetime.now().astimezone().isoformat()
+    last_update_ts = datetime.now().astimezone()
+    last_update_str = last_update_ts.isoformat()
+    last_actual = 0
     for date_str, usage_data in actual.items():
         if date_str in history:
             history[date_str]["actual"] = usage_data["total"]
             history[date_str]["models"] = usage_data["models"]
-            history[date_str]["last_update"] = last_update
+            history[date_str]["last_update"] = last_update_str
         else:
             history[date_str] = {
                 "planned": 0, 
                 "actual": usage_data["total"], 
                 "models": usage_data["models"],
+                "last_update": last_update_str
             }
+        last_actual = usage_data["total"]
 
     # Sort by date
     sorted_history = dict(sorted(history.items()))
@@ -232,10 +241,17 @@ def main():
 
     next_run_iso = get_next_run_time(all_crons)
 
+    # Prepare final JSON structure
+    output_data = {
+        "last_updated": last_update_str,
+        "last_actual": last_actual,
+        "data": sorted_history
+    }
+
     # Ensure data directory and year directory exist
     os.makedirs(year_dir, exist_ok=True)
     with open(data_file, "w") as f:
-        json.dump(sorted_history, f, indent=2)
+        json.dump(output_data, f, indent=2)
     print(f"Data for {month_str} updated in {data_file}")
     
     # Update latest pointer for UI
