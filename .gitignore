@@ -1,5 +1,5 @@
 # Local test scripts with credentials
-run_test_local.bat
+/local_*.*
 
 # Python
 __pycache__/
