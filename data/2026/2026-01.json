@@ -1,148 +1,152 @@
 {
-  "2026-01-01": {
-    "planned": 0,
-    "actual": 0
-  },
-  "2026-01-02": {
-    "planned": 0,
-    "actual": 0
-  },
-  "2026-01-03": {
-    "planned": 0,
-    "actual": 0
-  },
-  "2026-01-04": {
-    "planned": 14.29,
-    "actual": 0
-  },
-  "2026-01-05": {
-    "planned": 28.57,
-    "actual": 0
-  },
-  "2026-01-06": {
-    "planned": 42.86,
-    "actual": 0
-  },
-  "2026-01-07": {
-    "planned": 57.14,
-    "actual": 0
-  },
-  "2026-01-08": {
-    "planned": 71.43,
-    "actual": 0
-  },
-  "2026-01-09": {
-    "planned": 85.71,
-    "actual": 0
-  },
-  "2026-01-10": {
-    "planned": 85.71,
-    "actual": 0
-  },
-  "2026-01-11": {
-    "planned": 85.71,
-    "actual": 0
-  },
-  "2026-01-12": {
-    "planned": 100.0,
-    "actual": 0
-  },
-  "2026-01-13": {
-    "planned": 114.29,
-    "actual": 0
-  },
-  "2026-01-14": {
-    "planned": 128.57,
-    "actual": 123.0,
-    "models": {
-      "Claude Haiku 4.5": 1.65,
-      "Claude Sonnet 4.5": 34.0,
-      "Gemini 3 Flash": 63.69,
-      "Gemini 3 Pro": 23.0,
-      "GPT-5.1-Codex-Mini": 0.66
-    }
-  },
-  "2026-01-15": {
-    "planned": 142.86,
-    "actual": 147.56,
-    "models": {
-      "Claude Haiku 4.5": 1.65,
-      "Claude Sonnet 4.5": 36.0,
-      "Gemini 3 Flash": 74.25,
-      "Gemini 3 Pro": 35.0,
-      "GPT-5.1-Codex-Mini": 0.66
-    }
-  },
-  "2026-01-16": {
-    "planned": 157.14,
-    "actual": 151.22,
-    "models": {
-      "Claude Haiku 4.5": 1.65,
-      "Claude Sonnet 4.5": 36.0,
-      "Gemini 3 Flash": 74.91,
-      "Gemini 3 Pro": 38.0,
-      "GPT-5.1-Codex-Mini": 0.66
+  "last_updated": "2026-01-16T05:03:44.078554+00:00",
+  "last_actual": 151.22,
+  "data": {
+    "2026-01-01": {
+      "planned": 0,
+      "actual": 0
     },
-    "last_update": "2026-01-16T05:03:44.078554+00:00"
-  },
-  "2026-01-17": {
-    "planned": 157.14,
-    "actual": 0
-  },
-  "2026-01-18": {
-    "planned": 157.14,
-    "actual": 0
-  },
-  "2026-01-19": {
-    "planned": 171.43,
-    "actual": 0
-  },
-  "2026-01-20": {
-    "planned": 185.71,
-    "actual": 0
-  },
-  "2026-01-21": {
-    "planned": 200.0,
-    "actual": 0
-  },
-  "2026-01-22": {
-    "planned": 214.29,
-    "actual": 0
-  },
-  "2026-01-23": {
-    "planned": 228.57,
-    "actual": 0
-  },
-  "2026-01-24": {
-    "planned": 228.57,
-    "actual": 0
-  },
-  "2026-01-25": {
-    "planned": 228.57,
-    "actual": 0
-  },
-  "2026-01-26": {
-    "planned": 242.86,
-    "actual": 0
-  },
-  "2026-01-27": {
-    "planned": 257.14,
-    "actual": 0
-  },
-  "2026-01-28": {
-    "planned": 271.43,
-    "actual": 0
-  },
-  "2026-01-29": {
-    "planned": 285.71,
-    "actual": 0
-  },
-  "2026-01-30": {
-    "planned": 300.0,
-    "actual": 0
-  },
-  "2026-01-31": {
-    "planned": 300.0,
-    "actual": 0
+    "2026-01-02": {
+      "planned": 0,
+      "actual": 0
+    },
+    "2026-01-03": {
+      "planned": 0,
+      "actual": 0
+    },
+    "2026-01-04": {
+      "planned": 14.29,
+      "actual": 0
+    },
+    "2026-01-05": {
+      "planned": 28.57,
+      "actual": 0
+    },
+    "2026-01-06": {
+      "planned": 42.86,
+      "actual": 0
+    },
+    "2026-01-07": {
+      "planned": 57.14,
+      "actual": 0
+    },
+    "2026-01-08": {
+      "planned": 71.43,
+      "actual": 0
+    },
+    "2026-01-09": {
+      "planned": 85.71,
+      "actual": 0
+    },
+    "2026-01-10": {
+      "planned": 85.71,
+      "actual": 0
+    },
+    "2026-01-11": {
+      "planned": 85.71,
+      "actual": 0
+    },
+    "2026-01-12": {
+      "planned": 100.0,
+      "actual": 0
+    },
+    "2026-01-13": {
+      "planned": 114.29,
+      "actual": 0
+    },
+    "2026-01-14": {
+      "planned": 128.57,
+      "actual": 123.0,
+      "models": {
+        "Claude Haiku 4.5": 1.65,
+        "Claude Sonnet 4.5": 34.0,
+        "Gemini 3 Flash": 63.69,
+        "Gemini 3 Pro": 23.0,
+        "GPT-5.1-Codex-Mini": 0.66
+      }
+    },
+    "2026-01-15": {
+      "planned": 142.86,
+      "actual": 147.56,
+      "models": {
+        "Claude Haiku 4.5": 1.65,
+        "Claude Sonnet 4.5": 36.0,
+        "Gemini 3 Flash": 74.25,
+        "Gemini 3 Pro": 35.0,
+        "GPT-5.1-Codex-Mini": 0.66
+      }
+    },
+    "2026-01-16": {
+      "planned": 157.14,
+      "actual": 151.22,
+      "models": {
+        "Claude Haiku 4.5": 1.65,
+        "Claude Sonnet 4.5": 36.0,
+        "Gemini 3 Flash": 74.91,
+        "Gemini 3 Pro": 38.0,
+        "GPT-5.1-Codex-Mini": 0.66
+      },
+      "last_update": "2026-01-16T05:03:44.078554+00:00"
+    },
+    "2026-01-17": {
+      "planned": 157.14,
+      "actual": 0
+    },
+    "2026-01-18": {
+      "planned": 157.14,
+      "actual": 0
+    },
+    "2026-01-19": {
+      "planned": 171.43,
+      "actual": 0
+    },
+    "2026-01-20": {
+      "planned": 185.71,
+      "actual": 0
+    },
+    "2026-01-21": {
+      "planned": 200.0,
+      "actual": 0
+    },
+    "2026-01-22": {
+      "planned": 214.29,
+      "actual": 0
+    },
+    "2026-01-23": {
+      "planned": 228.57,
+      "actual": 0
+    },
+    "2026-01-24": {
+      "planned": 228.57,
+      "actual": 0
+    },
+    "2026-01-25": {
+      "planned": 228.57,
+      "actual": 0
+    },
+    "2026-01-26": {
+      "planned": 242.86,
+      "actual": 0
+    },
+    "2026-01-27": {
+      "planned": 257.14,
+      "actual": 0
+    },
+    "2026-01-28": {
+      "planned": 271.43,
+      "actual": 0
+    },
+    "2026-01-29": {
+      "planned": 285.71,
+      "actual": 0
+    },
+    "2026-01-30": {
+      "planned": 300.0,
+      "actual": 0
+    },
+    "2026-01-31": {
+      "planned": 300.0,
+      "actual": 0
+    }
   }
 }
