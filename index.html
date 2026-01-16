@@ -43,6 +43,18 @@
             gap: 12px;
             margin-bottom: 32px;
             align-items: center;
+            flex-wrap: wrap;
+        }
+        .status-labels {
+            display: flex;
+            gap: 16px;
+            margin-left: auto;
+            align-items: center;
+        }
+        .update-item {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
         }
         select {
             padding: 8px 16px;
@@ -100,6 +112,49 @@
             margin-right: 12px;
             flex-shrink: 0;
         }
+        .update-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .schedule-info {
+            font-size: 11px;
+            color: var(--text-muted);
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+        .refresh-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            margin-left: 16px;
+            padding-left: 16px;
+            border-left: 1px solid var(--border-color);
+        }
+        .refresh-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: #f5f3ff;
+        }
+        .auto-refresh-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
         .header-content {
             display: flex;
             align-items: center;
@@ -112,6 +167,48 @@
             opacity: 1;
             color: var(--accent-color);
             flex-shrink: 0;
+        }
+
+        /* Tooltip style */
+        .tooltip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.4;
+            pointer-events: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tooltip .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
         }
     </style>
 </head>
@@ -138,24 +235,43 @@
         <div class="controls">
             <select id="yearSelect" onchange="loadSelectedData()"></select>
             <select id="monthSelect" onchange="loadSelectedData()"></select>
+            <div class="status-labels">
+                <div class="update-item">
+                    <div class="update-time" id="lastUpdateTime"></div>
+                    <div class="schedule-info" id="scheduleInfo"></div>
+                </div>
+                <div class="refresh-controls">
+                    <button class="refresh-btn" onclick="manualRefresh()">Refresh Now</button>
+                    <label class="auto-refresh-label">
+                        <input type="checkbox" id="autoRefreshToggle" onchange="toggleAutoRefresh()" checked> Auto Refresh
+                    </label>
+                </div>
+            </div>
         </div>
 
         <div class="box">
             <div class="box-header">
                 <h2 id="chartTitle">Monthly Usage Progress</h2>
+                <div id="remainingIndicator" style="font-size: 14px; font-weight: 600;"></div>
             </div>
             <div class="chart-container">
                 <canvas id="usageChart"></canvas>
             </div>
         </div>
 
+        <div class="summary-grid" id="statsSummary" style="margin-bottom: 24px;">
+            <!-- Overall statistics -->
+        </div>
+
         <div class="summary-grid" id="modelSummary">
-            <!-- Dynamic summary cards -->
+            <!-- Dynamic model summary cards -->
         </div>
     </div>
 
     <script>
         let currentChart = null;
+        let latestData = null; // Store latest info (year, month, update time, cron)
+        let autoRefreshInterval = null;
         
         // Base URL configuration: Use Raw GitHub to avoid GitHub Pages CDN cache
         const BASE_DATA_URL = 'https://raw.githubusercontent.com/waknow/bill-usage/refs/heads/main/data/';
@@ -166,7 +282,12 @@
                             window.location.hostname === '127.0.0.1' || 
                             window.location.protocol === 'file:';
             // Use local path for local testing, otherwise use the Raw GitHub URL
-            return isLocal ? path : BASE_DATA_URL + path.replace('data/', '');
+            // Add cache busting timestamp for the latest.json if not local
+            let url = isLocal ? path : BASE_DATA_URL + path.replace('data/', '');
+            if (!isLocal && path.includes('latest.json')) {
+                url += `?t=${Date.now()}`;
+            }
+            return url;
         }
 
         async function init() {
@@ -177,50 +298,119 @@
             const startYear = 2025;
             const endYear = now.getFullYear();
 
-            for (let y = endYear; y >= startYear; y--) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = y;
-                yearSelect.appendChild(opt);
-            }
+            // Only clear and rebuild if empty
+            if (yearSelect.options.length === 0) {
+                for (let y = endYear; y >= startYear; y--) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    yearSelect.appendChild(opt);
+                }
 
-            const locale = navigator.language || 'en';
-            for (let m = 1; m <= 12; m++) {
-                const opt = document.createElement('option');
-                opt.value = m.toString().padStart(2, '0');
-                // Format month using browser's locale
-                const date = new Date(2000, m - 1, 1);
-                opt.textContent = date.toLocaleString(locale, { month: 'long' });
-                monthSelect.appendChild(opt);
+                const locale = navigator.language || 'en';
+                for (let m = 1; m <= 12; m++) {
+                    const opt = document.createElement('option');
+                    opt.value = m.toString().padStart(2, '0');
+                    const date = new Date(2000, m - 1, 1);
+                    opt.textContent = date.toLocaleString(locale, { month: 'long' });
+                    monthSelect.appendChild(opt);
+                }
             }
 
             try {
                 const latestRes = await fetch(getFetchUrl('data/latest.json'));
                 if (!latestRes.ok) throw new Error();
-                const latest = await latestRes.json();
-                yearSelect.value = latest.year;
-                monthSelect.value = latest.month.split('-')[1];
+                latestData = await latestRes.json();
+                
+                // Set defaults if not manually changed yet
+                if (!window._manuallyChanged) {
+                    yearSelect.value = latestData.year;
+                    monthSelect.value = latestData.month.split('-')[1];
+                }
+
+                // Show next run info
+                if (latestData.next_run) {
+                    const nextDate = new Date(latestData.next_run);
+                    document.getElementById('scheduleInfo').textContent = 
+                        `Next Schedule at ${nextDate.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`;
+                }
             } catch (e) {
-                yearSelect.value = now.getFullYear();
-                monthSelect.value = (now.getMonth() + 1).toString().padStart(2, '0');
+                if (!window._manuallyChanged) {
+                    yearSelect.value = now.getFullYear();
+                    monthSelect.value = (now.getMonth() + 1).toString().padStart(2, '0');
+                }
             }
 
             loadSelectedData();
+            toggleAutoRefresh();
+        }
+
+        function manualRefresh() {
+            const btn = document.querySelector('.refresh-btn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Updating...';
+            btn.disabled = true;
+            
+            init().finally(() => {
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }, 500);
+            });
+        }
+
+        function toggleAutoRefresh() {
+            const isEnabled = document.getElementById('autoRefreshToggle').checked;
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            
+            if (isEnabled) {
+                // Refresh every 5 minutes
+                autoRefreshInterval = setInterval(init, 5 * 60 * 1000);
+            }
         }
 
         async function loadSelectedData() {
-            const year = document.getElementById('yearSelect').value;
-            const month = document.getElementById('monthSelect').value;
-            const path = `data/${year}/${year}-${month}.json`;
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            
+            // Mark as manually changed after first load
+            yearSelect.onmousedown = () => window._manuallyChanged = true;
+            monthSelect.onmousedown = () => window._manuallyChanged = true;
 
-            document.getElementById('chartTitle').textContent = `Monthly Usage Progress: ${year}-${month}`;
+            const year = yearSelect.value;
+            const month = monthSelect.value;
+            const period = `${year}-${month}`;
+            const path = `data/${year}/${period}.json`;
+
+            document.getElementById('chartTitle').textContent = `Monthly Usage Progress: ${period}`;
+
+            // Show last update time ONLY if selecting the latest available month
+            const updateLabel = document.getElementById('lastUpdateTime');
+            if (latestData && latestData.year === year && latestData.month === period) {
+                const date = new Date(latestData.last_update);
+                updateLabel.textContent = `Updated at ${date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`;
+                updateLabel.style.display = 'block';
+            } else {
+                updateLabel.style.display = 'none';
+            }
 
             try {
                 const response = await fetch(getFetchUrl(path));
                 if (!response.ok) throw new Error('Data not found');
-                const data = await response.json();
-                renderChart(data);
-                updateSummary(data);
+                const json = await response.json();
+                
+                // Support both old and new format
+                const data = json.data || json;
+                
+                // Update label if monthly data has metadata
+                if (json.last_updated) {
+                    const date = new Date(json.last_updated);
+                    updateLabel.textContent = `Updated at ${date.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}`;
+                    updateLabel.style.display = 'block';
+                }
+
+                renderChart(json);
+                updateSummary(json);
             } catch (err) {
                 console.error(err);
                 renderEmptyChart(`${year}-${month}`);
@@ -263,10 +453,11 @@
             });
         }
 
-        function renderChart(data) {
+        function renderChart(json) {
+            // Support both old and new format
+            const data = json.data || json;
             const labels = Object.keys(data);
             const plannedData = labels.map(date => data[date].planned);
-            const actualData = labels.map(date => data[date].actual || 0);
 
             const modelNames = new Set();
             labels.forEach(date => {
@@ -278,13 +469,14 @@
 
             const now = new Date();
             const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const lastUpdateStr = json.last_updated ? json.last_updated.split('T')[0] : todayStr;
 
             const efficiencyData = labels.map((date, i) => {
                 // Do not draw efficiency background for future dates
-                if (date > todayStr) return null;
+                if (date > lastUpdateStr) return null;
 
                 const p = plannedData[i];
-                const a = actualData[i];
+                const a = data[date].actual || 0;
                 let val = (p > 0) ? ((a / p) - 1) * 100 : 0;
                 return Math.min(Math.max(val, -100), 100);
             });
@@ -292,17 +484,32 @@
             const datasets = [];
 
             // 1. Efficiency Background (Area)
+            // ... (rest of the function)
+            // Note: need to make sure bars also follow lastUpdateStr if they are cumulative?
+            // Actually actualData is cumulative in data/YYYY-MM.json? 
+            // Let's check update_usage.py again.
+            // In update_usage.py: history[date_str]["actual"] = usage_data["total"]
+            // usage_data["total"] is total_month_usage.
+            // Yes, actual is cumulative.
+            
+            // So if date > lastUpdateStr, we should probably set actual to null or 0 for the chart.
+            // Currently actualData = labels.map(date => data[date].actual || 0);
+            const chartActualData = labels.map(date => (date <= lastUpdateStr ? (data[date].actual || 0) : null));
+            
+            // Wait, models are also in the bars. 
+            // If date > lastUpdateStr, the bars should be empty.
             datasets.push({
                 label: 'Efficiency Variance',
                 data: efficiencyData,
                 yAxisID: 'yEfficiency',
                 pointRadius: 0,
-                borderWidth: 0,
+                borderWidth: 1,
+                borderColor: 'rgba(0,0,0,0.05)',
                 tension: 0.3,
                 fill: {
                     target: 'origin',
-                    above: 'rgba(207, 34, 46, 0.08)',
-                    below: 'rgba(9, 105, 218, 0.05)'
+                    above: 'rgba(239, 68, 68, 0.15)', // Rose tint (over usage)
+                    below: 'rgba(34, 197, 94, 0.15)'  // Green tint (efficient)
                 },
                 type: 'line',
                 order: 10 // Bottom
@@ -312,9 +519,9 @@
             datasets.push({
                 label: 'Planned Target',
                 data: plannedData,
-                borderColor: '#ef4444',
+                borderColor: '#6366f1',
                 borderWidth: 2,
-                borderDash: [6, 4],
+                borderDash: [5, 5],
                 fill: false,
                 tension: 0.4,
                 pointRadius: 0,
@@ -323,13 +530,26 @@
             });
 
             // 3. Actual Usage Bars (Stacked)
-            const colors = ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#f43f5e', '#8b5cf6', '#475569'];
+            // Modern Vivid Palette
+            const colors = [
+                '#818cf8', // Indigo
+                '#38bdf8', // Sky
+                '#34d399', // Emerald
+                '#fbbf24', // Amber
+                '#f87171', // Red/Rose
+                '#a78bfa', // Violet
+                '#2dd4bf'  // Teal
+            ];
             sortedModels.forEach((model, index) => {
                 datasets.push({
                     label: model,
-                    data: labels.map(date => (data[date].models ? data[date].models[model] || 0 : 0)),
+                    data: labels.map(date => {
+                        if (date > lastUpdateStr) return null;
+                        return (data[date].models ? data[date].models[model] || 0 : 0);
+                    }),
                     backgroundColor: colors[index % colors.length],
                     borderRadius: 4,
+                    borderWidth: 0,
                     stack: 'actual',
                     type: 'bar',
                     order: 1
@@ -348,17 +568,40 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                boxHeight: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                                font: { size: 12, weight: '500' }
+                            }
+                        }
+                    },
                     scales: {
                         x: { 
                             stacked: true, 
                             grid: { display: false },
-                            ticks: { color: '#64748b', font: { size: 11 } }
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { size: 11 },
+                                maxRotation: 0
+                            }
                         },
                         y: { 
                             beginAtZero: true,
-                            grid: { color: '#f1f5f9' },
-                            border: { display: false },
-                            ticks: { color: '#64748b', font: { size: 11 } }
+                            stacked: true,
+                            grid: { color: '#f8fafc' },
+                            border: { dash: [4, 4], display: false },
+                            ticks: { 
+                                color: '#94a3b8', 
+                                font: { size: 11 },
+                                callback: (v) => v.toFixed(0)
+                            }
                         },
                         yEfficiency: {
                             display: false,
@@ -407,24 +650,108 @@
             });
         }
 
-        function updateSummary(data) {
-            const container = document.getElementById('modelSummary');
-            container.innerHTML = '';
-            const lastDate = Object.keys(data).sort().pop();
-            const dateData = data[lastDate];
-            if (!dateData || !dateData.models) return;
+        function updateSummary(json) {
+            // Support both old and new format
+            const data = json.data || json;
+            const statsContainer = document.getElementById('statsSummary');
+            const modelsContainer = document.getElementById('modelSummary');
+            statsContainer.innerHTML = '';
+            modelsContainer.innerHTML = '';
+            
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const lastUpdateDateStr = json.last_updated ? json.last_updated.split('T')[0] : todayStr;
+            const keys = Object.keys(data).sort();
+            const lastDate = keys[keys.length - 1];
 
-            addSummaryCard('Total Month-to-Date', (dateData.actual || 0).toFixed(2), (dateData.actual > dateData.planned) ? '#cf222e' : '#2da44e');
-            Object.entries(dateData.models).sort((a,b) => b[1] - a[1]).forEach(([name, val]) => {
-                addSummaryCard(name, val.toFixed(2));
-            });
+            // 1. Calculate Remaining & Monthly Progress
+            // Use last_actual if available, otherwise fallback to finding the latest value in history
+            let currentActual = json.last_actual !== undefined ? json.last_actual : 0;
+            if (json.last_actual === undefined) {
+                for (let i = keys.length - 1; i >= 0; i--) {
+                    if (data[keys[i]].actual !== undefined && keys[i] <= todayStr) {
+                        currentActual = data[keys[i]].actual;
+                        break;
+                    }
+                }
+            }
+
+            const currentPlanned = data[lastUpdateDateStr] ? data[lastUpdateDateStr].planned : (data[lastDate] ? data[lastDate].planned : 0);
+            const remaining = currentPlanned - currentActual;
+
+            // 2. Update Header Indicator (Only for current month)
+            const yearSelect = document.getElementById('yearSelect');
+            const monthSelect = document.getElementById('monthSelect');
+            const isCurrentMonth = (yearSelect.value == now.getFullYear() && monthSelect.value == (now.getMonth() + 1).toString().padStart(2, '0'));
+            const indicator = document.getElementById('remainingIndicator');
+            
+            if (isCurrentMonth && indicator) {
+                if (remaining >= 0) {
+                    indicator.innerHTML = `Remaining Today: <span style="color: var(--success-color)">+${remaining.toFixed(0)}</span>`;
+                } else {
+                    indicator.innerHTML = `Overused Today: <span style="color: var(--danger-color)">${remaining.toFixed(0)}</span>`;
+                }
+                indicator.style.display = 'block';
+            } else if (indicator) {
+                indicator.style.display = 'none';
+            }
+
+            // 3. Add Summary Cards
+            if (isCurrentMonth) {
+                const color = remaining >= 0 ? 'var(--success-color)' : 'var(--danger-color)';
+                addSummaryCard('Remaining Today', remaining.toFixed(1), color, statsContainer);
+            }
+            
+            addSummaryCard('Total Month-to-Date', currentActual.toFixed(1), 
+                (currentActual > currentPlanned) ? 'var(--danger-color)' : 'var(--success-color)', 
+                statsContainer, `/ ${currentPlanned.toFixed(0)}`, 'Target is calculated based on monthly quota and workdays distribution');
+
+            // Model breakdown (find last day with models)
+            let modelData = null;
+            for (let i = keys.length - 1; i >= 0; i--) {
+                if (data[keys[i]].models) {
+                    modelData = data[keys[i]].models;
+                    break;
+                }
+            }
+
+            if (modelData) {
+                const totalModelUsage = Object.values(modelData).reduce((a, b) => a + b, 0);
+                Object.entries(modelData).sort((a,b) => b[1] - a[1]).forEach(([name, val]) => {
+                    const percentage = totalModelUsage > 0 ? (val / totalModelUsage * 100).toFixed(1) : 0;
+                    addSummaryCard(name, val.toFixed(2), null, modelsContainer, `${percentage}%`);
+                });
+            }
         }
 
-        function addSummaryCard(label, value, color) {
+        function addSummaryCard(label, value, color, container, subtitle, info) {
+            const target = container || document.getElementById('modelSummary');
             const div = document.createElement('div');
             div.className = 'summary-card';
-            div.innerHTML = `<div class="summary-label">${label}</div><div class="summary-value" style="color: ${color || 'inherit'}">${value}</div>`;
-            document.getElementById('modelSummary').appendChild(div);
+            
+            let html = `<div class="summary-label">${label}</div>`;
+            html += `<div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">`;
+            html += `<div class="summary-value" style="color: ${color || 'inherit'}">${value}</div>`;
+            
+            if (subtitle) {
+                html += `<div style="font-size: 18px; color: var(--text-muted); font-weight: 500;">${subtitle}</div>`;
+            }
+            
+            if (info) {
+                // Using custom CSS tooltip for better visibility
+                html += `<div class="tooltip" style="cursor: help; margin-left: 2px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); opacity: 0.7; vertical-align: middle;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <span class="tooltip-text">${info}</span>
+                </div>`;
+            }
+            
+            html += `</div>`;
+            div.innerHTML = html;
+            target.appendChild(div);
         }
 
         init();

@@ -105,6 +105,54 @@ def fetch_actual_usage():
         print(f"Error fetching actual usage: {e}")
         return {}
 
+def get_next_run_time(cron_list):
+    """
+    Simpler version of cron next-run calculation for GitHub Actions crons.
+    Supports fixed values, ranges (2-10), and lists (1,3,5).
+    Assumes * * * * format for (min, hour, day, month, dow).
+    """
+    from datetime import datetime, timedelta
+    
+    def parse_part(part, max_val, min_val=0):
+        if part == "*":
+            return list(range(min_val, max_val + 1))
+        res = []
+        for segment in part.split(","):
+            if "-" in segment:
+                start, end = map(int, segment.split("-"))
+                res.extend(range(start, end + 1))
+            else:
+                res.append(int(segment))
+        return sorted(list(set(res)))
+
+    now = datetime.utcnow()
+    next_runs = []
+
+    for cron in cron_list:
+        try:
+            parts = cron.split()
+            if len(parts) < 2: continue
+            
+            mins = parse_part(parts[0], 59)
+            hours = parse_part(parts[1], 23)
+            
+            # Simple approach: check the next 48 hours for a match
+            for h_offset in range(48):
+                candidate_base = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=h_offset)
+                if candidate_base.hour in hours:
+                    for m in mins:
+                        candidate = candidate_base.replace(minute=m)
+                        if candidate > now:
+                            next_runs.append(candidate)
+                            break
+                    if next_runs and next_runs[-1].hour == candidate_base.hour:
+                        break
+        except: continue
+    
+    if not next_runs:
+        return None
+    return min(next_runs).isoformat() + "Z"
+
 def main():
     # Calculate for the current month
     today = datetime.now()
@@ -140,7 +188,12 @@ def main():
     
     if os.path.exists(data_file):
         with open(data_file, "r") as f:
-            history = json.load(f)
+            raw_history = json.load(f)
+            # Support both old and new format during migration
+            if "data" in raw_history:
+                history = raw_history["data"]
+            else:
+                history = raw_history
     else:
         history = {}
 
@@ -152,29 +205,64 @@ def main():
             history[date_str]["planned"] = val
             
     # Update with actual values (including model breakdown)
+    last_update_ts = datetime.now().astimezone()
+    last_update_str = last_update_ts.isoformat()
+    last_actual = 0
     for date_str, usage_data in actual.items():
         if date_str in history:
             history[date_str]["actual"] = usage_data["total"]
             history[date_str]["models"] = usage_data["models"]
+            history[date_str]["last_update"] = last_update_str
         else:
             history[date_str] = {
                 "planned": 0, 
                 "actual": usage_data["total"], 
-                "models": usage_data["models"]
+                "models": usage_data["models"],
+                "last_update": last_update_str
             }
+        last_actual = usage_data["total"]
 
     # Sort by date
     sorted_history = dict(sorted(history.items()))
 
+    # Extract all cron schedules from all workflow files
+    all_crons = []
+    try:
+        workflow_dir = ".github/workflows"
+        if os.path.exists(workflow_dir):
+            import re
+            for filename in os.listdir(workflow_dir):
+                if filename.endswith(".yml") or filename.endswith(".yaml"):
+                    with open(os.path.join(workflow_dir, filename), "r", encoding="utf-8") as f:
+                        content = f.read()
+                        all_crons.extend(re.findall(r"cron:\s*'([^']+)'", content))
+    except Exception as e:
+        print(f"Warning: Could not parse workflow crons: {e}")
+
+    next_run_iso = get_next_run_time(all_crons)
+
+    # Prepare final JSON structure
+    output_data = {
+        "last_updated": last_update_str,
+        "last_actual": last_actual,
+        "data": sorted_history
+    }
+
     # Ensure data directory and year directory exist
     os.makedirs(year_dir, exist_ok=True)
     with open(data_file, "w") as f:
-        json.dump(sorted_history, f, indent=2)
+        json.dump(output_data, f, indent=2)
     print(f"Data for {month_str} updated in {data_file}")
     
     # Update latest pointer for UI
     with open("data/latest.json", "w") as f:
-        json.dump({"year": year_str, "month": month_str}, f, indent=2)
+        json.dump({
+            "year": year_str, 
+            "month": month_str,
+            "last_update": datetime.now().astimezone().isoformat(),
+            "next_run": next_run_iso,
+            "crons": list(set(all_crons)) # Just for record
+        }, f, indent=2)
 
 if __name__ == "__main__":
     main()
