@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-02-02T06:16:55.643771+00:00",
-  "last_actual": 1.65,
+  "last_updated": "2026-02-02T07:19:18.879679+00:00",
+  "last_actual": 2.98,
   "data": {
     "2026-02-01": {
       "planned": 0,
@@ -10,11 +10,12 @@
     },
     "2026-02-02": {
       "planned": 18.75,
-      "actual": 1.65,
+      "actual": 2.98,
       "models": {
-        "Gemini 3 Flash": 1.65
+        "Claude Sonnet 4.5": 1.0,
+        "Gemini 3 Flash": 1.98
       },
-      "last_update": "2026-02-02T06:16:55.643771+00:00"
+      "last_update": "2026-02-02T07:19:18.879679+00:00"
     },
     "2026-02-03": {
       "planned": 37.5,
