@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-02-25T15:20:51.391211+00:00",
-  "last_actual": 168.13,
+  "last_updated": "2026-02-26T02:53:16.466610+00:00",
+  "last_actual": 171.13,
   "data": {
     "2026-02-01": {
       "planned": 0,
@@ -9,7 +9,7 @@
       "last_update": "2026-02-01T15:05:50.995411+00:00"
     },
     "2026-02-02": {
-      "planned": 18.75,
+      "planned": 81.25,
       "actual": 17.52,
       "models": {
         "Claude Sonnet 4.5": 1.0,
@@ -19,7 +19,7 @@
       "last_update": "2026-02-02T15:15:31.966819+00:00"
     },
     "2026-02-03": {
-      "planned": 37.5,
+      "planned": 162.5,
       "actual": 23.79,
       "models": {
         "Claude Sonnet 4.5": 1.0,
@@ -29,7 +29,7 @@
       "last_update": "2026-02-03T15:17:00.436473+00:00"
     },
     "2026-02-04": {
-      "planned": 56.25,
+      "planned": 243.75,
       "actual": 34.38,
       "models": {
         "Claude Sonnet 4.5": 1.0,
@@ -40,7 +40,7 @@
       "last_update": "2026-02-04T15:15:56.088879+00:00"
     },
     "2026-02-05": {
-      "planned": 75.0,
+      "planned": 325.0,
       "actual": 50.97,
       "models": {
         "Claude Sonnet 4.5": 10.0,
@@ -51,7 +51,7 @@
       "last_update": "2026-02-05T15:15:36.306407+00:00"
     },
     "2026-02-06": {
-      "planned": 93.75,
+      "planned": 406.25,
       "actual": 78.5,
       "models": {
         "Claude Sonnet 4.5": 22.0,
@@ -63,7 +63,7 @@
       "last_update": "2026-02-06T15:15:24.635953+00:00"
     },
     "2026-02-07": {
-      "planned": 93.75,
+      "planned": 406.25,
       "actual": 78.5,
       "models": {
         "Claude Sonnet 4.5": 22.0,
@@ -75,7 +75,7 @@
       "last_update": "2026-02-07T15:06:00.570529+00:00"
     },
     "2026-02-08": {
-      "planned": 93.75,
+      "planned": 406.25,
       "actual": 78.5,
       "models": {
         "Claude Sonnet 4.5": 22.0,
@@ -87,7 +87,7 @@
       "last_update": "2026-02-08T15:06:42.659113+00:00"
     },
     "2026-02-09": {
-      "planned": 112.5,
+      "planned": 487.5,
       "actual": 106.02,
       "models": {
         "Claude Sonnet 4.5": 23.0,
@@ -100,7 +100,7 @@
       "last_update": "2026-02-09T15:20:47.310696+00:00"
     },
     "2026-02-10": {
-      "planned": 131.25,
+      "planned": 568.75,
       "actual": 116.6,
       "models": {
         "Claude Sonnet 4.5": 23.0,
@@ -113,7 +113,7 @@
       "last_update": "2026-02-10T15:26:42.251963+00:00"
     },
     "2026-02-11": {
-      "planned": 150.0,
+      "planned": 650.0,
       "actual": 132.54,
       "models": {
         "Claude Sonnet 4.5": 23.0,
@@ -126,7 +126,7 @@
       "last_update": "2026-02-11T15:21:57.756290+00:00"
     },
     "2026-02-12": {
-      "planned": 168.75,
+      "planned": 731.25,
       "actual": 152.49,
       "models": {
         "Claude Sonnet 4.5": 28.0,
@@ -140,7 +140,7 @@
       "last_update": "2026-02-12T15:18:46.543121+00:00"
     },
     "2026-02-13": {
-      "planned": 187.5,
+      "planned": 812.5,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -154,7 +154,7 @@
       "last_update": "2026-02-13T15:15:41.556554+00:00"
     },
     "2026-02-14": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -168,7 +168,7 @@
       "last_update": "2026-02-14T15:06:19.037434+00:00"
     },
     "2026-02-15": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -182,7 +182,7 @@
       "last_update": "2026-02-15T15:06:25.663873+00:00"
     },
     "2026-02-16": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -196,7 +196,7 @@
       "last_update": "2026-02-16T15:15:21.576985+00:00"
     },
     "2026-02-17": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -210,7 +210,7 @@
       "last_update": "2026-02-17T15:18:04.165237+00:00"
     },
     "2026-02-18": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -224,7 +224,7 @@
       "last_update": "2026-02-18T15:18:23.304373+00:00"
     },
     "2026-02-19": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -238,7 +238,7 @@
       "last_update": "2026-02-19T15:16:58.669172+00:00"
     },
     "2026-02-20": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -252,7 +252,7 @@
       "last_update": "2026-02-20T15:15:00.253918+00:00"
     },
     "2026-02-21": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -266,7 +266,7 @@
       "last_update": "2026-02-21T15:05:49.229452+00:00"
     },
     "2026-02-22": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -280,7 +280,7 @@
       "last_update": "2026-02-22T15:05:56.877592+00:00"
     },
     "2026-02-23": {
-      "planned": 206.25,
+      "planned": 893.75,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -294,7 +294,7 @@
       "last_update": "2026-02-23T15:18:14.285420+00:00"
     },
     "2026-02-24": {
-      "planned": 225.0,
+      "planned": 975.0,
       "actual": 166.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -308,7 +308,7 @@
       "last_update": "2026-02-24T15:20:32.789408+00:00"
     },
     "2026-02-25": {
-      "planned": 243.75,
+      "planned": 1056.25,
       "actual": 168.13,
       "models": {
         "Claude Sonnet 4.5": 39.0,
@@ -323,15 +323,27 @@
       "last_update": "2026-02-25T15:20:51.391211+00:00"
     },
     "2026-02-26": {
-      "planned": 262.5,
-      "actual": 0
+      "planned": 1137.5,
+      "actual": 171.13,
+      "models": {
+        "Claude Sonnet 4.5": 39.0,
+        "Claude Sonnet 4.6": 2.0,
+        "Code Review model": 3.0,
+        "Coding Agent model": 3.0,
+        "Gemini 2.5 Pro": 1.0,
+        "Gemini 3 Flash": 86.13,
+        "Gemini 3 Pro": 33.0,
+        "GPT-5.2": 3.0,
+        "GPT-5.2-Codex": 1.0
+      },
+      "last_update": "2026-02-26T02:53:16.466610+00:00"
     },
     "2026-02-27": {
-      "planned": 281.25,
+      "planned": 1218.75,
       "actual": 0
     },
     "2026-02-28": {
-      "planned": 300.0,
+      "planned": 1300.0,
       "actual": 0
     }
   }
