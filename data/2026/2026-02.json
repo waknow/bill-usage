@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-02-28T09:02:39.717255+00:00",
-  "last_actual": 285.04,
+  "last_updated": "2026-02-28T10:00:59.595560+00:00",
+  "last_actual": 315.04,
   "data": {
     "2026-02-01": {
       "planned": 0,
@@ -357,9 +357,9 @@
     },
     "2026-02-28": {
       "planned": 1500.0,
-      "actual": 285.04,
+      "actual": 315.04,
       "models": {
-        "Claude Opus 4.6": 33.0,
+        "Claude Opus 4.6": 63.0,
         "Claude Sonnet 4.5": 49.0,
         "Claude Sonnet 4.6": 45.0,
         "Code Review model": 3.0,
@@ -372,7 +372,7 @@
         "GPT-5.2-Codex": 1.0,
         "GPT-5.3-Codex": 2.0
       },
-      "last_update": "2026-02-28T09:02:39.717255+00:00"
+      "last_update": "2026-02-28T10:00:59.595560+00:00"
     }
   }
 }
