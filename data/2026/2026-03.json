@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-03-24T06:17:09.851440+00:00",
-  "last_actual": 845.01,
+  "last_updated": "2026-03-24T07:20:24.433402+00:00",
+  "last_actual": 855.01,
   "data": {
     "2026-03-01": {
       "planned": 0,
@@ -414,13 +414,13 @@
     },
     "2026-03-24": {
       "planned": 1159.09,
-      "actual": 845.01,
+      "actual": 855.01,
       "models": {
         "Auto: Claude Haiku 4.5": 0.3,
         "Auto: GPT-5.3-Codex": 2.7,
         "Claude Opus 4.6": 252.0,
         "Claude Sonnet 4.5": 1.0,
-        "Claude Sonnet 4.6": 338.0,
+        "Claude Sonnet 4.6": 348.0,
         "Code Review model": 1.0,
         "Gemini 3 Flash": 65.01,
         "Gemini 3 Pro": 34.0,
@@ -432,7 +432,7 @@
         "GPT-5.3-Codex": 59.0,
         "GPT-5.4": 41.0
       },
-      "last_update": "2026-03-24T06:17:09.851440+00:00"
+      "last_update": "2026-03-24T07:20:24.433402+00:00"
     },
     "2026-03-25": {
       "planned": 1227.27,
