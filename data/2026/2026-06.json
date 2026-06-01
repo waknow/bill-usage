@@ -1,18 +1,19 @@
 {
-  "last_updated": "2026-06-01T08:47:14.928534+00:00",
-  "last_actual": 20.0,
+  "last_updated": "2026-06-01T10:38:58.950651+00:00",
+  "last_actual": 28.0,
   "data": {
     "2026-06-01": {
       "planned": 71.43,
-      "actual": 20.0,
+      "actual": 28.0,
       "models": {
         "Claude Haiku 4.5": 0.0,
         "Claude Sonnet 4.6": 19.0,
+        "Gemini 3.1 Pro": 8.0,
         "GPT-4o mini": 0.0,
         "GPT-5.4": 1.0,
         "Raptor mini": 0.0
       },
-      "last_update": "2026-06-01T08:47:14.928534+00:00"
+      "last_update": "2026-06-01T10:38:58.950651+00:00"
     },
     "2026-06-02": {
       "planned": 142.86,
