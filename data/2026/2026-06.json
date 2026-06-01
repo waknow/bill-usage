@@ -1,16 +1,17 @@
 {
-  "last_updated": "2026-06-01T02:59:48.560902+00:00",
-  "last_actual": 3.0,
+  "last_updated": "2026-06-01T04:41:00.110894+00:00",
+  "last_actual": 15.0,
   "data": {
     "2026-06-01": {
       "planned": 71.43,
-      "actual": 3.0,
+      "actual": 15.0,
       "models": {
-        "Claude Sonnet 4.6": 2.0,
+        "Claude Haiku 4.5": 0.0,
+        "Claude Sonnet 4.6": 14.0,
         "GPT-4o mini": 0.0,
         "GPT-5.4": 1.0
       },
-      "last_update": "2026-06-01T02:59:48.560902+00:00"
+      "last_update": "2026-06-01T04:41:00.110894+00:00"
     },
     "2026-06-02": {
       "planned": 142.86,
