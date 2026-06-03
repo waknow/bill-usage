@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-06-03T06:33:28.186194+00:00",
-  "last_actual": 106.43,
+  "last_updated": "2026-06-03T08:36:07.419672+00:00",
+  "last_actual": 112.43,
   "data": {
     "2026-06-01": {
       "planned": 71.43,
@@ -34,7 +34,7 @@
     },
     "2026-06-03": {
       "planned": 214.29,
-      "actual": 106.43,
+      "actual": 112.43,
       "models": {
         "Auto: GPT-5.3-Codex": 5.4,
         "Claude Haiku 4.5": 0.0,
@@ -44,11 +44,11 @@
         "GPT-4o mini": 0.0,
         "GPT-5 mini": 0.0,
         "GPT-5.2-Codex": 0.0,
-        "GPT-5.3-Codex": 18.0,
+        "GPT-5.3-Codex": 24.0,
         "GPT-5.4": 7.0,
         "Raptor mini": 0.0
       },
-      "last_update": "2026-06-03T06:33:28.186194+00:00"
+      "last_update": "2026-06-03T08:36:07.419672+00:00"
     },
     "2026-06-04": {
       "planned": 285.71,
