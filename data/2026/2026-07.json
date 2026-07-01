@@ -1,16 +1,16 @@
 {
-  "last_updated": "2026-07-01T08:21:13.373373+00:00",
-  "last_actual": 5.94,
+  "last_updated": "2026-07-01T10:17:57.584334+00:00",
+  "last_actual": 9.24,
   "data": {
     "2026-07-01": {
       "planned": 65.22,
-      "actual": 5.94,
+      "actual": 9.24,
       "models": {
-        "Gemini 3 Flash": 2.64,
+        "Gemini 3 Flash": 4.29,
         "GPT-4o mini": 0.0,
-        "Raptor mini": 3.3
+        "Raptor mini": 4.95
       },
-      "last_update": "2026-07-01T08:21:13.373373+00:00"
+      "last_update": "2026-07-01T10:17:57.584334+00:00"
     },
     "2026-07-02": {
       "planned": 130.43,
