@@ -1,6 +1,6 @@
 {
-  "last_updated": "2026-07-03T02:58:19.676738+00:00",
-  "last_actual": 288.64,
+  "last_updated": "2026-07-03T04:21:01.904456+00:00",
+  "last_actual": 332.62,
   "data": {
     "2026-07-01": {
       "planned": 65.22,
@@ -26,15 +26,16 @@
     },
     "2026-07-03": {
       "planned": 195.65,
-      "actual": 288.64,
+      "actual": 332.62,
       "models": {
-        "Claude Sonnet 4.6": 252.0,
+        "Claude Sonnet 4.6": 288.0,
         "Code Review model": 1.0,
         "Gemini 3 Flash": 25.74,
         "GPT-4o mini": 0.0,
-        "Raptor mini": 9.9
+        "GPT-5.3-Codex": 6.0,
+        "Raptor mini": 11.88
       },
-      "last_update": "2026-07-03T02:58:19.676738+00:00"
+      "last_update": "2026-07-03T04:21:01.904456+00:00"
     },
     "2026-07-04": {
       "planned": 195.65,
